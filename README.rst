@@ -13,7 +13,7 @@ Installation
 
 Until this package is published on `PyPi <https://pypi.org/>`_::
 
-  pip install https://github.com/vytas7/falcon-sqla
+  pip install git+https://github.com/vytas7/falcon-sqla
 
 
 Usage
