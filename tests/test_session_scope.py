@@ -25,9 +25,11 @@ class Languages:
 
 
 @pytest.fixture
-def client(base, engine):
+def client(base, create_engines):
+    engines = create_engines()
+
     language_cls = base._decl_class_registry['Language']
-    languages = Languages(engine(), language_cls)
+    languages = Languages(engines['write'], language_cls)
 
     app = falcon.API()
     app.add_route('/languages', languages)
