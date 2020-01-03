@@ -39,7 +39,6 @@ Configuration
 
     engine = create_engine('driver+dialect://my/database')
     manager = falcon_sqla.Manager(engine)
-    # TODO: document manager.add_engine(...)
 
     app = falcon.API(middleware=[manager.middleware])
 
@@ -48,7 +47,8 @@ Configuration
 Context Manager
 ^^^^^^^^^^^^^^^
 
-Asking the ``falcon_sqla.Manager`` to explicitly provide a database session:
+A ``falcon_sqla.Manager`` can also explicitly provide a database session using
+the ``session_scope()`` context manager:
 
 .. code:: python
 
@@ -56,6 +56,28 @@ Asking the ``falcon_sqla.Manager`` to explicitly provide a database session:
     with self.manager.session_scope(req, resp) as session:
         # Use the session
         # <...>
+
+Custom Vertical Partitioning
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Simple random selection of read- and write- database replicas is supported
+out of the box. Use the ``add_engine()`` method to instruct the ``Manager`` to
+include the provided engines in the runtime bind selection logic:
+
+.. code:: python
+
+    manager = falcon_sqla.Manager(engine)
+
+    read_replica = create_engine('driver+dialect://my/database.replica')
+    manager.add_engine(read_replica, 'r')
+
+.. note::
+   The ``Manager.get_bind()`` method can be overridden to implement custom
+   engine selection logic for more complex use cases.
+
+   See also this SQLAlchemy recipe:
+   `Custom Vertical Partitioning
+   <https://docs.sqlalchemy.org/orm/persistence_techniques.html#custom-vertical-partitioning>`_.
 
 
 About Falcon
