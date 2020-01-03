@@ -1,3 +1,5 @@
+|Build Status|
+
 Falcon Middleware: SQLAlchemy Integration
 =========================================
 
@@ -10,8 +12,6 @@ binds.
 
 Installation
 ------------
-
-Until this package is published on `PyPi <https://pypi.org/>`_::
 
   $ pip install falcon-sqla
 
@@ -71,13 +71,13 @@ include the provided engines in the runtime bind selection logic:
     read_replica = create_engine('driver+dialect://my/database.replica')
     manager.add_engine(read_replica, 'r')
 
-.. note::
-   The ``Manager.get_bind()`` method can be overridden to implement custom
-   engine selection logic for more complex use cases.
 
-   See also this SQLAlchemy recipe:
-   `Custom Vertical Partitioning
-   <https://docs.sqlalchemy.org/orm/persistence_techniques.html#custom-vertical-partitioning>`_.
+The ``Manager.get_bind()`` method can be overridden to implement custom engine
+selection logic for more complex use cases.
+
+See also this SQLAlchemy recipe:
+`Custom Vertical Partitioning
+<https://docs.sqlalchemy.org/orm/persistence_techniques.html#custom-vertical-partitioning>`_.
 
 
 About Falcon
@@ -94,3 +94,7 @@ About SQLAlchemy
 `SQLAlchemy <https://www.sqlalchemy.org/>`_ is the Python SQL toolkit and
 Object Relational Mapper that gives application developers the full power and
 flexibility of SQL.
+
+
+.. |Build Status| image:: https://api.travis-ci.org/vytas7/falcon-sqla.svg
+   :target: https://travis-ci.org/vytas7/falcon-sqla
