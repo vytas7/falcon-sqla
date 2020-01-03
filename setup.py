@@ -20,6 +20,7 @@ REQUIRES = [
 EXTRAS_REQUIRE = {
     'test': [
         'pytest',
+        'pytest-cov',
     ],
 }
 

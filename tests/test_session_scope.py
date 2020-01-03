@@ -23,9 +23,16 @@ class Languages:
                         .order_by(self.language_cls.id)
                 )]
 
+            if req.get_param_as_bool('zero_division'):
+                resp.body = str(0/0)
+
 
 @pytest.fixture
 def client(base, create_engines):
+    def handle_exception(req, resp, ex, params):
+        resp.status = falcon.HTTP_500
+        resp.body = type(ex).__name__
+
     engines = create_engines()
 
     language_cls = base._decl_class_registry['Language']
@@ -33,6 +40,7 @@ def client(base, create_engines):
 
     app = falcon.API()
     app.add_route('/languages', languages)
+    app.add_error_handler(Exception, handle_exception)
 
     return falcon.testing.TestClient(app)
 
@@ -42,3 +50,9 @@ def test_list_languages(client):
 
     assert resp.status_code == 200
     assert resp.json == []
+
+
+def test_rollback(client):
+    resp = client.simulate_get('/languages?zero_division')
+    assert resp.status_code == 500
+    assert resp.text == 'ZeroDivisionError'

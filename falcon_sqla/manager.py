@@ -49,7 +49,7 @@ class Manager:
         if 'r' in role:
             self._read_engines += (engine,)
         if 'w' in role:
-            self._write_engines + (engine,)
+            self._write_engines += (engine,)
 
         if not self.session_options.read_from_rw_engines:
             self._read_engines = self._filter_by_role(
@@ -58,8 +58,10 @@ class Manager:
             self._write_engines = self._filter_by_role(
                 self._write_engines, 'w')
 
-        if not self._binds:
-            self._manager_get_bind = self.get_bind
+        # TODO (vytas): Do not tamper with custom binds.
+        # if not self._binds:
+        #     self._manager_get_bind = self.get_bind
+        self._manager_get_bind = self.get_bind
 
     def get_bind(self, req, resp, session, mapper, clause):
         """

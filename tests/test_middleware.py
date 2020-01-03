@@ -32,7 +32,14 @@ class Languages:
                 yield b'\n'
 
         resp.context_type = falcon.MEDIA_TEXT
-        resp.stream = stream_names()
+
+        if req.get_param_as_bool('zero_division'):
+            resp.body = str(0/0)
+
+        if req.get_param_as_bool('iterable_as_stream'):
+            resp.stream = iter(tuple(stream_names()))
+        else:
+            resp.stream = stream_names()
 
     def on_post(self, req, resp):
         language = self.language_cls(
@@ -40,9 +47,21 @@ class Languages:
         req.context.session.add(language)
         resp.status = falcon.HTTP_CREATED
 
+    def on_options(self, req, resp):
+        resp.content_length = 0
+        resp.status = falcon.HTTP_OK
+
+        resp.set_header('Allow', 'OPTIONS, GET, POST')
+        resp.set_header('X-Req-Session-Is-None',
+                        str(req.context.session is None))
+
 
 @pytest.fixture
 def client(base, create_engines):
+    def handle_exception(req, resp, ex, params):
+        resp.status = falcon.HTTP_500
+        resp.body = type(ex).__name__
+
     language_cls = base._decl_class_registry['Language']
     languages = Languages(language_cls)
 
@@ -53,6 +72,7 @@ def client(base, create_engines):
     app = falcon.API(middleware=[manager.middleware])
     app.add_route('/languages', languages)
     app.add_route('/names', languages, suffix='names')
+    app.add_error_handler(Exception, handle_exception)
 
     return falcon.testing.TestClient(app)
 
@@ -80,4 +100,21 @@ def test_post_languages(client):
     ]
 
     resp2 = client.simulate_get('/names')
+    assert resp2.status_code == 200
     assert resp2.text == 'Python\nRust\nPHP\n'
+
+    resp3 = client.simulate_get('/names?iterable_as_stream')
+    assert resp3.text == resp2.text
+
+
+def test_rollback(client):
+    resp = client.simulate_get('/names?zero_division')
+    assert resp.status_code == 500
+    assert resp.text == 'ZeroDivisionError'
+
+
+def test_options(client):
+    resp = client.simulate_options('/languages')
+
+    assert resp.status_code == 200
+    assert resp.headers['X-Req-Session-Is-None'] == 'True'
