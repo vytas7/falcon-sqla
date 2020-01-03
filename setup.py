@@ -26,7 +26,7 @@ EXTRAS_REQUIRE = {
 
 
 setup(
-    name='falcon_sqla',
+    name='falcon-sqla',
     version=VERSION,
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
