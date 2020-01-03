@@ -50,11 +50,11 @@ setup(
     ],
     keywords='falcon wsgi database middleware orm sqlalchemy',
     author='Vytautas Liuolia',
-    author_email='mail@kgriffs.com',
+    author_email='vytautas.liuolia@gmail.com',
     url='https://github.com/vytas7/falcon-sqla',
     license='Apache 2.0',
     packages=find_packages(exclude=['tests']),
-    # python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
+    python_requires='>=3.5',
     install_requires=REQUIRES,
     extras_require=EXTRAS_REQUIRE,
 )
