@@ -13,7 +13,9 @@ binds.
 Installation
 ------------
 
-  $ pip install falcon-sqla
+.. code:: bash
+
+    $ pip install falcon-sqla
 
 
 Usage
