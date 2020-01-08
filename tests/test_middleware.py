@@ -7,8 +7,8 @@ from falcon_sqla import Manager
 
 class Languages:
 
-    def __init__(self, language_cls):
-        self.language_cls = language_cls
+    def __init__(self, db):
+        self.db = db
 
     def on_get(self, req, resp):
         resp.media = [
@@ -18,15 +18,15 @@ class Languages:
                 'created': lang.created,
             }
             for lang in (
-                req.context.session.query(self.language_cls)
-                .order_by(self.language_cls.created)
+                req.context.session.query(self.db.Language)
+                .order_by(self.db.Language.created)
             )]
 
     def on_get_names(self, req, resp):
         def stream_names():
             for lang in (
-                req.context.session.query(self.language_cls)
-                .order_by(self.language_cls.id)
+                req.context.session.query(self.db.Language)
+                .order_by(self.db.Language.id)
             ):
                 yield lang.name.encode()
                 yield b'\n'
@@ -42,7 +42,7 @@ class Languages:
             resp.stream = stream_names()
 
     def on_post(self, req, resp):
-        language = self.language_cls(
+        language = self.db.Language(
             name=req.media['name'], created=req.media.get('created'))
         req.context.session.add(language)
         resp.status = falcon.HTTP_CREATED
@@ -56,18 +56,17 @@ class Languages:
                         str(req.context.session is None))
 
 
-@pytest.fixture
-def client(base, create_engines):
+@pytest.fixture(params=['sticky_binds: no', 'sticky_binds: yes'])
+def client(request, database):
     def handle_exception(req, resp, ex, params):
         resp.status = falcon.HTTP_500
         resp.body = type(ex).__name__
 
-    language_cls = base._decl_class_registry['Language']
-    languages = Languages(language_cls)
+    languages = Languages(database)
 
-    engines = create_engines()
-    manager = Manager(engines['write'])
-    manager.add_engine(engines['read'], 'r')
+    manager = Manager(database.write_engine)
+    manager.add_engine(database.read_engine, 'r')
+    manager.session_options.sticky_binds = request.param.endswith('yes')
 
     app = falcon.API(middleware=[manager.middleware])
     app.add_route('/languages', languages)

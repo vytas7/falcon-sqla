@@ -9,55 +9,71 @@ import pytest
 
 
 @pytest.fixture
-def base():
-    Base = declarative_base()
+def database():
+    class Database:
+        Base = declarative_base()
 
-    class Language(Base):
-        __tablename__ = 'languages'
-        __table_args__ = {'sqlite_autoincrement': True}
+        class Language(Base):
+            __tablename__ = 'languages'
 
-        id = Column(Integer, primary_key=True)
-        name = Column(String(16))
-        created = Column(Integer)
+            id = Column(Integer, primary_key=True)
+            name = Column(String(16), nullable=False)
+            created = Column(Integer)
 
-    class Engineer(Base):
-        __tablename__ = 'engineers'
-        __table_args__ = {'sqlite_autoincrement': True}
+        class Snippet(Base):
+            __tablename__ = 'snippets'
 
-        id = Column(Integer, primary_key=True)
-        name = Column(String, nullable=False)
-        languageid = Column(ForeignKey(Language.id))
+            id = Column(Integer, primary_key=True)
+            code = Column(String, nullable=False)
+            languageid = Column(ForeignKey('languages.id'))
 
-        language = relationship(Language, backref='engineers')
+            language = relationship('Language', backref='snippets')
 
-    return Base
+        def __init__(self, back_end, write_engine, read_engine):
+            self.back_end = back_end
+            self.write_engine = write_engine
+            self.read_engine = read_engine
 
+        def create_all(self):
+            self.Base.metadata.create_all(self.write_engine)
 
-@pytest.fixture
-def create_engines(base):
-    # NOTE(vytas): Hack until we only support SQLAlchemy with improvement:
-    #   https://github.com/sqlalchemy/sqlalchemy/issues/4863
-    def connect_ro():
-        uri_ro = 'file:' + path + '?mode=ro'
-        return sqlite3.connect(uri_ro, uri=True)
+        def drop_all(self):
+            self.Base.metadata.drop_all(self.write_engine)
 
-    def create():
-        uri = 'sqlite:///' + path
-        engines = {
-            'read': create_engine('sqlite://', creator=connect_ro),
-            'write': create_engine(uri),
-        }
-        base.metadata.create_all(engines['write'])
+    postgres_uri = os.environ.get('FALCON_SQLA_POSTGRESQL_URI')
+    if postgres_uri:
+        back_end = 'postgresql'
+        write_engine = create_engine(postgres_uri, echo=True)
+        read_engine = create_engine(
+            postgres_uri + '&options=-c%20default_transaction_read_only%3Don',
+            echo=True)
+    else:
+        sqlite_path = os.environ.get(
+            'FALCON_SQLA_TEST_DB', '/tmp/falcon-sqla/test.db')
+        if not os.path.exists(os.path.dirname(sqlite_path)):
+            os.makedirs(os.path.dirname(sqlite_path))
 
-        return engines
+        # NOTE(vytas): Hack until we only support SQLAlchemy with this
+        #   improvement: https://github.com/sqlalchemy/sqlalchemy/issues/4863
+        def connect_ro():
+            uri_ro = 'file:' + sqlite_path + '?mode=ro'
+            return sqlite3.connect(uri_ro, uri=True)
 
-    path = os.environ.get('FALCON_SQLA_TEST_DB', '/tmp/falcon-sqla/test.db')
-    if not os.path.exists(os.path.dirname(path)):
-        os.makedirs(os.path.dirname(path))
+        back_end = 'sqlite'
+        uri = 'sqlite:///' + sqlite_path
+        write_engine = create_engine(uri, echo=True)
+        read_engine = create_engine(
+            uri + '?mode=ro', creator=connect_ro, echo=True)
 
-    yield create
+    db = Database(back_end, write_engine, read_engine)
+    db.create_all()
 
-    try:
-        os.unlink(path)
-    except OSError:
-        pass
+    yield db
+
+    if back_end == 'sqlite':
+        try:
+            os.unlink(sqlite_path)
+        except OSError:
+            pass
+    else:
+        db.drop_all()

@@ -14,6 +14,7 @@
 
 import contextlib
 import random
+import uuid
 
 from sqlalchemy.orm.session import sessionmaker
 
@@ -35,6 +36,8 @@ class Manager:
             bind=engine, class_=session_cls, binds=binds)
 
         self.session_options = SessionOptions()
+
+        assert not self._binds, 'passing custom binds is not supported yet'
 
     def _filter_by_role(self, engines, role):
         filtered = tuple(engine for engine in engines
@@ -67,10 +70,17 @@ class Manager:
         """
         Choose the appropriate bind for the given request session.
         """
-        write = req.method not in self.session_options.safe_methods
-        if self.session_options.write_engine_if_flushing and session._flushing:
-            write = True
+        write = req.method not in self.session_options.safe_methods or (
+            self.session_options.write_engine_if_flushing and
+            session._flushing)
         engines = self._write_engines if write else self._read_engines
+
+        if len(engines) == 1:
+            return engines[0]
+
+        if self.session_options.sticky_binds:
+            return engines[hash(req.request_id) % len(engines)]
+
         return random.choice(engines)
 
     def get_session(self, req, resp):
@@ -111,6 +121,7 @@ class Middleware:
 
     def __init__(self, manager):
         self._manager = manager
+        self._options = manager.session_options
 
     def process_request(self, req, resp):
         """
@@ -118,8 +129,11 @@ class Middleware:
 
         The session object is stored as ``req.context.session``.
         """
-        if req.method not in self._manager.session_options.no_session_methods:
+        if req.method not in self._options.no_session_methods:
             req.context.session = self._manager.get_session(req, resp)
+            if (self._options.sticky_binds and
+                    not getattr(req.context, 'request_id', None)):
+                req.request_id = self._options.request_id_func()
         else:
             req.context.session = None
 
@@ -162,9 +176,10 @@ class SessionOptions:
     def __init__(self):
         self.no_session_methods = self.NO_SESSION_METHODS
         self.safe_methods = self.SAFE_METHODS
+
         self.read_from_rw_engines = True
         self.write_to_rw_engines = True
         self.write_engine_if_flushing = True
 
-        # TODO(vytas) Not implemented yet.
-        # self.sticky_binds = False
+        self.request_id_func = uuid.uuid4
+        self.sticky_binds = False

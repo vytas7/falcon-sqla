@@ -7,9 +7,9 @@ from falcon_sqla import Manager
 
 class Languages:
 
-    def __init__(self, engine, language_cls):
-        self.manager = Manager(engine)
-        self.language_cls = language_cls
+    def __init__(self, database):
+        self.db = database
+        self.manager = Manager(database.write_engine)
 
     def on_get(self, req, resp):
         with self.manager.session_scope(req, resp) as session:
@@ -19,8 +19,8 @@ class Languages:
                     'name': lang.name,
                 }
                 for lang in (
-                        session.query(self.language_cls)
-                        .order_by(self.language_cls.id)
+                        session.query(self.db.Language)
+                        .order_by(self.db.Language.id)
                 )]
 
             if req.get_param_as_bool('zero_division'):
@@ -28,15 +28,12 @@ class Languages:
 
 
 @pytest.fixture
-def client(base, create_engines):
+def client(database):
     def handle_exception(req, resp, ex, params):
         resp.status = falcon.HTTP_500
         resp.body = type(ex).__name__
 
-    engines = create_engines()
-
-    language_cls = base._decl_class_registry['Language']
-    languages = Languages(engines['write'], language_cls)
+    languages = Languages(database)
 
     app = falcon.API()
     app.add_route('/languages', languages)
