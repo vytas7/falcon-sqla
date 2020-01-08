@@ -3,7 +3,7 @@ language: python
 dist: xenial
 install: pip install --upgrade pip tox virtualenv
 
-matrix:
+jobs:
     include:
         - python: 3.5
           env:
@@ -17,6 +17,14 @@ matrix:
         - python: 3.8
           env:
             - TOXENV=py38
+        - python: 3.8
+          services:
+            - postgresql
+          before_script:
+            - psql -c 'create database travis_ci_test;' -U postgres
+          env:
+            - FALCON_SQLA_POSTGRESQL_URI=postgresql://postgres:@localhost/travis_ci_test
+            - TOXENV=postgresql
         - python: 3.8
           env:
             - TOXENV=flake8
