@@ -1,4 +1,4 @@
-|Build Status|
+|Build Status| |codecov.io|
 
 Falcon Middleware: SQLAlchemy Integration
 =========================================
@@ -100,3 +100,5 @@ flexibility of SQL.
 
 .. |Build Status| image:: https://api.travis-ci.org/vytas7/falcon-sqla.svg
    :target: https://travis-ci.org/vytas7/falcon-sqla
+.. |codecov.io| image:: https://codecov.io/gh/vytas7/falcon-sqla/branch/master/graphs/badge.svg
+   :target: http://codecov.io/gh/vytas7/falcon-sqla
