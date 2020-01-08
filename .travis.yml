@@ -1,7 +1,7 @@
 language: python
 
 dist: xenial
-install: pip install --upgrade pip tox virtualenv
+install: pip install --upgrade codecov pip tox virtualenv
 
 jobs:
     include:
@@ -31,3 +31,6 @@ jobs:
 
 script:
   - tox
+
+after_success:
+  - codecov
