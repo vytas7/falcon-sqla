@@ -5,18 +5,6 @@ install: pip install --upgrade codecov pip tox virtualenv
 
 jobs:
     include:
-        - python: 3.5
-          env:
-            - TOXENV=py35
-        - python: 3.6
-          env:
-            - TOXENV=py36
-        - python: 3.7
-          env:
-            - TOXENV=py37
-        - python: 3.8
-          env:
-            - TOXENV=py38
         - python: 3.8
           services:
             - postgresql
@@ -35,6 +23,18 @@ jobs:
           env:
             - FALCON_SQLA_POSTGRESQL_URI=postgresql://postgres:@localhost/travis_ci_test
             - TOXENV=pypy3_postgresql
+        - python: 3.5
+          env:
+            - TOXENV=py35
+        - python: 3.6
+          env:
+            - TOXENV=py36
+        - python: 3.7
+          env:
+            - TOXENV=py37
+        - python: 3.8
+          env:
+            - TOXENV=py38
         - python: 3.8
           env:
             - TOXENV=flake8
