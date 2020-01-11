@@ -28,12 +28,19 @@ jobs:
           env:
             - FALCON_SQLA_POSTGRESQL_URI=postgresql://postgres:@localhost/travis_ci_test
             - TOXENV=postgresql
+          after_success:
+            - codecov
+        - python: pypy3.6-7.1.1
+          services:
+            - postgresql
+          before_script:
+            - psql -c 'create database travis_ci_test;' -U postgres
+          env:
+            - FALCON_SQLA_POSTGRESQL_URI=postgresql://postgres:@localhost/travis_ci_test
+            - TOXENV=pypy3_postgresql
         - python: 3.8
           env:
             - TOXENV=flake8
 
 script:
   - tox
-
-after_success:
-  - codecov
