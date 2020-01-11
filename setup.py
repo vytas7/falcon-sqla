@@ -1,13 +1,15 @@
-import imp
+import importlib.util
 import os.path
 from setuptools import setup, find_packages
 
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 
-VERSION = imp.load_source(
+version_spec = importlib.util.spec_from_file_location(
     'version', os.path.join(HERE, 'falcon_sqla', 'version.py'))
-VERSION = VERSION.__version__
+version_mod = importlib.util.module_from_spec(version_spec)
+version_spec.loader.exec_module(version_mod)
+VERSION = version_mod.__version__
 
 DESCRIPTION = 'Middleware for integrating Falcon applications with SQLAlchemy.'
 with open(os.path.join(HERE, 'README.rst')) as readme_file:
