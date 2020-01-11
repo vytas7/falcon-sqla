@@ -18,8 +18,8 @@ import uuid
 
 from sqlalchemy.orm.session import sessionmaker
 
+from .middleware import Middleware
 from .session import RequestSession
-from .util import ClosingStreamWrapper
 
 
 class Manager:
@@ -59,14 +59,12 @@ class Manager:
             self._write_engines = self._filter_by_role(
                 self._write_engines, 'w')
 
-        # NOTE (vytas): Do not tamper with custom binds.
+        # NOTE(vytas): Do not tamper with custom binds.
         if not self._binds:
             self._manager_get_bind = self.get_bind
 
     def get_bind(self, req, resp, session, mapper, clause):
-        """
-        Choose the appropriate bind for the given request session.
-        """
+        """Choose the appropriate bind for the given request session."""
         write = req.method not in self.session_options.safe_methods or (
             self.session_options.write_engine_if_flushing and
             session._flushing)
@@ -97,6 +95,9 @@ class Manager:
     def session_scope(self, req, resp):
         """
         Provide a transactional scope around a series of operations.
+
+        Based on the ``session_scope()`` recipe from
+        https://docs.sqlalchemy.org/orm/session_basics.html.
         """
         session = self.get_session(req, resp)
 
@@ -112,52 +113,6 @@ class Manager:
     @property
     def middleware(self):
         return Middleware(self)
-
-
-class Middleware:
-
-    def __init__(self, manager):
-        self._manager = manager
-        self._options = manager.session_options
-
-    def process_request(self, req, resp):
-        """
-        Set up the SQLAlchemy session for this request.
-
-        The session object is stored as ``req.context.session``.
-        """
-        if req.method not in self._options.no_session_methods:
-            req.context.session = self._manager.get_session(req, resp)
-            if (self._options.sticky_binds and
-                    not getattr(req.context, 'request_id', None)):
-                req.request_id = self._options.request_id_func()
-        else:
-            req.context.session = None
-
-    def process_response(self, req, resp, resource, req_succeeded):
-
-        def cleanup():
-            # NOTE(vytas): Break circular references between the request and
-            #   the session.
-            req.context.session = None
-            del session.info['req']
-            del session.info['resp']
-
-            session.close()
-
-        session = getattr(req.context, 'session', None)
-
-        if session:
-            try:
-                if req_succeeded:
-                    session.commit()
-                else:
-                    session.rollback()
-            finally:
-                if req_succeeded and resp.stream:
-                    resp.stream = ClosingStreamWrapper(resp.stream, cleanup)
-                else:
-                    cleanup()
 
 
 class SessionOptions:
