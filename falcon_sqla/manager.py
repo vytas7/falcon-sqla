@@ -37,8 +37,6 @@ class Manager:
 
         self.session_options = SessionOptions()
 
-        assert not self._binds, 'passing custom binds is not supported yet'
-
     def _filter_by_role(self, engines, role):
         filtered = tuple(engine for engine in engines
                          if self._engines.get(engine) == role)
@@ -61,10 +59,9 @@ class Manager:
             self._write_engines = self._filter_by_role(
                 self._write_engines, 'w')
 
-        # TODO (vytas): Do not tamper with custom binds.
-        # if not self._binds:
-        #     self._manager_get_bind = self.get_bind
-        self._manager_get_bind = self.get_bind
+        # NOTE (vytas): Do not tamper with custom binds.
+        if not self._binds:
+            self._manager_get_bind = self.get_bind
 
     def get_bind(self, req, resp, session, mapper, clause):
         """
