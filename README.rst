@@ -59,6 +59,15 @@ the ``session_scope()`` context manager:
         # Use the session
         # <...>
 
+``session_scope()`` can also be used as a standalone session context outside of
+the request-response cycle:
+
+.. code:: python
+
+    with self.manager.session_scope() as session:
+        # Use the session
+        # <...>
+
 Custom Vertical Partitioning
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -78,10 +78,13 @@ class Manager:
 
         return random.choice(engines)
 
-    def get_session(self, req, resp):
-        return self._Session(
-            info={'req': req, 'resp': resp},
-            _manager_get_bind=self._manager_get_bind)
+    def get_session(self, req=None, resp=None):
+        if req and resp:
+            return self._Session(
+                info={'req': req, 'resp': resp},
+                _manager_get_bind=self._manager_get_bind)
+
+        return self._Session()
 
     @property
     def read_engines(self):
@@ -92,7 +95,7 @@ class Manager:
         return self._write_engines
 
     @contextlib.contextmanager
-    def session_scope(self, req, resp):
+    def session_scope(self, req=None, resp=None):
         """
         Provide a transactional scope around a series of operations.
 

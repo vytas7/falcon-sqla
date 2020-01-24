@@ -53,3 +53,15 @@ def test_rollback(client):
     resp = client.simulate_get('/languages?zero_division')
     assert resp.status_code == 500
     assert resp.text == 'ZeroDivisionError'
+
+
+def test_generic_scope(database):
+    manager = Manager(database.write_engine)
+
+    with manager.session_scope() as session:
+        session.add(database.Language(name='Malbolge', created=1998))
+
+    with manager.session_scope() as session:
+        malbolge = session.query(database.Language).first()
+        assert malbolge.name == 'Malbolge'
+        assert malbolge.created == 1998
