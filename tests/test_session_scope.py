@@ -1,15 +1,21 @@
 import falcon
 import falcon.testing
 import pytest
+from sqlalchemy.orm.session import Session
 
-from falcon_sqla import Manager
+from falcon_sqla.manager import Manager
+from falcon_sqla.session import RequestSession
+
+
+class FunkySession(Session):
+    pass
 
 
 class Languages:
 
-    def __init__(self, database):
+    def __init__(self, database, session_cls):
         self.db = database
-        self.manager = Manager(database.write_engine)
+        self.manager = Manager(database.write_engine, session_cls=session_cls)
 
     def on_get(self, req, resp):
         with self.manager.session_scope(req, resp) as session:
@@ -27,13 +33,13 @@ class Languages:
                 resp.body = str(0/0)
 
 
-@pytest.fixture
-def client(database):
+@pytest.fixture(params=[RequestSession, Session, FunkySession])
+def client(request, database):
     def handle_exception(req, resp, ex, params):
         resp.status = falcon.HTTP_500
         resp.body = type(ex).__name__
 
-    languages = Languages(database)
+    languages = Languages(database, session_cls=request.param)
 
     app = falcon.API()
     app.add_route('/languages', languages)

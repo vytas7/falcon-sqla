@@ -31,7 +31,7 @@ class Middleware:
             req.context.session = self._manager.get_session(req, resp)
             if (self._options.sticky_binds and
                     not getattr(req.context, 'request_id', None)):
-                req.request_id = self._options.request_id_func()
+                req.context.request_id = self._options.request_id_func()
         else:
             req.context.session = None
 

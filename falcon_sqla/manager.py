@@ -29,9 +29,10 @@ class Manager:
         self._engines = {engine: 'rw'}
         self._read_engines = (engine,)
         self._write_engines = (engine,)
-        self._manager_get_bind = None
+        self._session_kwargs = {}
 
         self._binds = binds
+        self._session_cls = session_cls
         self._Session = sessionmaker(
             bind=engine, class_=session_cls, binds=binds)
 
@@ -60,8 +61,10 @@ class Manager:
                 self._write_engines, 'w')
 
         # NOTE(vytas): Do not tamper with custom binds.
-        if not self._binds:
-            self._manager_get_bind = self.get_bind
+        # NOTE(vytas): We can only rely on RequestSession and its subclasses to
+        #   implement the private _manager_get_bind constructor kwarg.
+        if not self._binds and issubclass(self._session_cls, RequestSession):
+            self._session_kwargs = {'_manager_get_bind': self.get_bind}
 
     def get_bind(self, req, resp, session, mapper, clause):
         """Choose the appropriate bind for the given request session."""
@@ -74,15 +77,14 @@ class Manager:
             return engines[0]
 
         if self.session_options.sticky_binds:
-            return engines[hash(req.request_id) % len(engines)]
+            return engines[hash(req.context.request_id) % len(engines)]
 
         return random.choice(engines)
 
     def get_session(self, req=None, resp=None):
         if req and resp:
             return self._Session(
-                info={'req': req, 'resp': resp},
-                _manager_get_bind=self._manager_get_bind)
+                info={'req': req, 'resp': resp}, **self._session_kwargs)
 
         return self._Session()
 
