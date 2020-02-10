@@ -39,7 +39,7 @@ Configuration
 
 .. code:: python
 
-    engine = create_engine('driver+dialect://my/database')
+    engine = create_engine('dialect+driver://my/database')
     manager = falcon_sqla.Manager(engine)
 
     app = falcon.API(middleware=[manager.middleware])
