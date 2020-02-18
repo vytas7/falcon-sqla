@@ -50,11 +50,9 @@ def database():
     if postgres_uri:
         back_end = 'postgresql'
         write_engine = create_engine(postgres_uri, echo=True)
-        # NOTE(vytas) We should parse the DB URI properly, but this simple
-        #   heuristic should do for now.
-        ro_query = '&' if '?' in postgres_uri else '?'
-        ro_query += 'options=-c%20default_transaction_read_only%3Don'
-        read_engine = create_engine(postgres_uri + ro_query, echo=True)
+        args = {'options': '-c default_transaction_read_only=on'}
+        read_engine = create_engine(
+            postgres_uri, echo=True, connect_args=args)
     else:
         sqlite_path = os.environ.get(
             'FALCON_SQLA_TEST_DB', '/tmp/falcon-sqla/test.db')
