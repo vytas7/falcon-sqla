@@ -14,6 +14,16 @@
 
 
 class ClosingStreamWrapper:
+    """Iterator that wraps a file-like stream with support for close().
+
+    This class is used to wrap WSGI response streams to provide a side effect
+    when the stream is closed
+
+    Args:
+        stream (object): Readable file-like stream object.
+        close (callable): A callable object that is called before the stream
+            is closed.
+    """
 
     def __init__(self, stream, close):
         self._stream = stream
