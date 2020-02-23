@@ -69,8 +69,8 @@ class Manager:
         Args:
             engine (Engine): An instance of a SQLAlchemy Engine.
             role ({'r', 'rw', 'w'}, optional): The role of the engine
-            ('r': read-ony, 'rw': read-write, 'w': write-only). Defaults to
-            'r'.
+                ('r': read-ony, 'rw': read-write, 'w': write-only).
+                Defaults to 'r'.
         """
         if role not in {'r', 'rw', 'w'}:
             raise ValueError("role must be one of ('r', 'rw', 'w')")
