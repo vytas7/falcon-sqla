@@ -28,6 +28,12 @@ class RequestSession(sqlalchemy.orm.Session):
         super().__init__(*args, **kwargs)
 
     def get_bind(self, mapper=None, clause=None):
+        """
+        Uses the manager to get the appropriate bind when ``_manager_get_bind``
+        is defined. Otherwise the default logic is used.
+
+        This method is called by SQLAlchemy.
+        """
         if self._manager_get_bind:
             return self._manager_get_bind(
                 session=self, mapper=mapper, clause=clause, **self.info)

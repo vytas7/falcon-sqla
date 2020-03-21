@@ -16,7 +16,11 @@ from .util import ClosingStreamWrapper
 
 
 class Middleware:
+    """Falcon middleware that can be used with the session manager.
 
+    Args:
+        manager (Manager): Manager instance to use in this middleware.
+    """
     def __init__(self, manager):
         self._manager = manager
         self._options = manager.session_options
@@ -26,6 +30,9 @@ class Middleware:
         Set up the SQLAlchemy session for this request.
 
         The session object is stored as ``req.context.session``.
+        When the option :attr:`SessionOptions.sticky_binds` is set to True an
+        identification of the request is stored in ``req.context.request_id``
+        (if not already present).
         """
         if req.method not in self._options.no_session_methods:
             req.context.session = self._manager.get_session(req, resp)
@@ -36,7 +43,12 @@ class Middleware:
             req.context.session = None
 
     def process_response(self, req, resp, resource, req_succeeded):
+        """
+        Cleans up the session if one was provided.
 
+        Finalizes the session by calling commit if `req_succeeded` is True,
+        rollback otherwise. Finally it will close the session.
+        """
         def cleanup():
             # NOTE(vytas): Break circular references between the request and
             #   the session.

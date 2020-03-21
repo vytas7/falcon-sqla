@@ -23,7 +23,23 @@ from .session import RequestSession
 
 
 class Manager:
+    """A manager for SQLAlchemy sessions.
 
+    This manager allows registering multiple SQLAlchemy engines, specifying
+    if they are read-write or read-only or write-only capable.
+
+    Args:
+        engine (Engine): An instance of a SQLAlchemy Engine, usually obtained
+            with its ``create_engine`` function. This engine is added as
+            read-write.
+        session_cls (type, optional): Session class used by this engine to
+            create the session. Should be a subclass of SQLAlchemy ``Session`
+            class. Defaults to :class:`.RequestSession`.
+        binds (dict, optional): A dictionary that allows specifying custom
+            binds on a per-entity basis in the session. See also
+            https://docs.sqlalchemy.org/en/13/orm/session_api.html#sqlalchemy.orm.session.Session.params.binds.
+            Defaults to None.
+    """
     def __init__(self, engine, session_cls=RequestSession, binds=None):
         self._main_engine = engine
         self._engines = {engine: 'rw'}
@@ -39,11 +55,23 @@ class Manager:
         self.session_options = SessionOptions()
 
     def _filter_by_role(self, engines, role):
+        """Returns all the ``engines`` whose role is exactly ``role``.
+
+        NOTE: if no engine with a role is found, all the engine are returned.
+        """
         filtered = tuple(engine for engine in engines
                          if self._engines.get(engine) == role)
         return filtered or engines
 
     def add_engine(self, engine, role='r'):
+        """Adds a new engine with the specified role.
+
+        Args:
+            engine (Engine): An instance of a SQLAlchemy Engine.
+            role ({'r', 'rw', 'w'}, optional): The role of the engine
+                ('r': read-ony, 'rw': read-write, 'w': write-only).
+                Defaults to 'r'.
+        """
         if role not in {'r', 'rw', 'w'}:
             raise ValueError("role must be one of ('r', 'rw', 'w')")
 
@@ -67,7 +95,11 @@ class Manager:
             self._session_kwargs = {'_manager_get_bind': self.get_bind}
 
     def get_bind(self, req, resp, session, mapper, clause):
-        """Choose the appropriate bind for the given request session."""
+        """Choose the appropriate bind for the given request session.
+
+        This method is not used directly, it's called by the session instance
+        if multiple engines are defined.
+        """
         write = req.method not in self.session_options.safe_methods or (
             self.session_options.write_engine_if_flushing and
             session._flushing)
@@ -82,6 +114,7 @@ class Manager:
         return random.choice(engines)
 
     def get_session(self, req=None, resp=None):
+        """Returns a new session object."""
         if req and resp:
             return self._Session(
                 info={'req': req, 'resp': resp}, **self._session_kwargs)
@@ -90,10 +123,12 @@ class Manager:
 
     @property
     def read_engines(self):
+        """A tuple of read capable engines."""
         return self._read_engines
 
     @property
     def write_engines(self):
+        """A tuple of write capable engines."""
         return self._write_engines
 
     @contextlib.contextmanager
@@ -117,10 +152,43 @@ class Manager:
 
     @property
     def middleware(self):
+        """Returns a new :class:`Middleware` instance connected to this
+        manager.
+        """
         return Middleware(self)
 
 
 class SessionOptions:
+    """Defines a set of configurable options for the session.
+
+    An instance of this class is exposed via :attr:`Manager.session_options`.
+
+    Attributes:
+        no_session_methods (frozenset): HTTP methods that by default do not
+            require a DB session. Defaults to
+            :attr:`SessionOptions.NO_SESSION_METHODS`.
+        safe_methods (frozenset): HTTP methods that can use a read-only engine
+            since they do no alter the state of the db. Defaults to
+            :attr:`SessionOptions.SAFE_METHODS`.
+        read_from_rw_engines (bool): When True read operations are allowed from
+            read-write engines. Only used if more than one engine is defined
+            in the :class:`Manager`. Defaults to ``True``.
+        write_to_rw_engines (bool): When True write operations are allowed from
+            read-write engines. Only used if more than one engine is defined
+            in the :class:`Manager`. Defaults to `True`.
+        write_engine_if_flushing (bool): When True a write engine is selected
+            if the session is in flushing state. Only used if more than one
+            engine is defined in the :class:`Manager`. Defaults to ``True``.
+        sticky_binds (bool): When ``True`` the same engine will be used for each
+            DB operation of a particular request. When ``False`` the engine will
+            be chosen randomly from the ones with the required capabilities.
+            Only used if more than one engine is defined in the
+            :class:`Manager`. Defaults to ``False``.
+        request_id_func (callabe): A callable object that returns an unique
+            id for to each session. The returned object must be hashable.
+            Only used when :attr:`SessionOptions.sticky_binds` is True.
+            Defaults to ``uuid.uuid4``.
+    """
     NO_SESSION_METHODS = frozenset(['OPTIONS', 'TRACE'])
     """HTTP methods that by default do not require a DB session."""
 
@@ -130,6 +198,16 @@ class SessionOptions:
     These methods are assumed to be fine with read-only replica engines.
     """
 
+    __slots__ = [
+        'no_session_methods',
+        'safe_methods',
+        'read_from_rw_engines',
+        'write_to_rw_engines',
+        'write_engine_if_flushing',
+        'sticky_binds',
+        'request_id_func',
+    ]
+
     def __init__(self):
         self.no_session_methods = self.NO_SESSION_METHODS
         self.safe_methods = self.SAFE_METHODS
@@ -138,5 +216,5 @@ class SessionOptions:
         self.write_to_rw_engines = True
         self.write_engine_if_flushing = True
 
-        self.request_id_func = uuid.uuid4
         self.sticky_binds = False
+        self.request_id_func = uuid.uuid4
