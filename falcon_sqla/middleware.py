@@ -16,7 +16,7 @@ from .util import ClosingStreamWrapper
 
 
 class Middleware:
-    """Falcon middleware that can be used with the session manage.
+    """Falcon middleware that can be used with the session manager.
 
     Args:
         manager (Manager): Manager instance to use in this middleware.
