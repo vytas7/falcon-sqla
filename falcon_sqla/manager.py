@@ -198,7 +198,7 @@ class SessionOptions:
     These methods are assumed to be fine with read-only replica engines.
     """
 
-    __slots__ = (
+    __slots__ = [
         'no_session_methods',
         'safe_methods',
         'read_from_rw_engines',
@@ -206,7 +206,7 @@ class SessionOptions:
         'write_engine_if_flushing',
         'sticky_binds',
         'request_id_func',
-    )
+    ]
 
     def __init__(self):
         self.no_session_methods = self.NO_SESSION_METHODS
