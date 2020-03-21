@@ -153,7 +153,8 @@ class Manager:
     @property
     def middleware(self):
         """Returns a new :class:`Middleware` instance connected to this
-        manager."""
+        manager.
+        """
         return Middleware(self)
 
 
@@ -171,18 +172,18 @@ class SessionOptions:
             :attr:`SessionOptions.SAFE_METHODS`.
         read_from_rw_engines (bool): When True read operations are allowed from
             read-write engines. Only used if more than one engine is defined
-            in the :class:`Manager`. Defaults to `True`.
+            in the :class:`Manager`. Defaults to ``True``.
         write_to_rw_engines (bool): When True write operations are allowed from
             read-write engines. Only used if more than one engine is defined
             in the :class:`Manager`. Defaults to `True`.
         write_engine_if_flushing (bool): When True a write engine is selected
             if the session is in flushing state. Only used if more than one
-            engine is defined in the :class:`Manager`. Defaults to `True`.
-        sticky_binds (bool): When True the same engine will be used for each
-            db operation of a particular request. When False the engine will
+            engine is defined in the :class:`Manager`. Defaults to ``True``.
+        sticky_binds (bool): When ``True`` the same engine will be used for each
+            DB operation of a particular request. When ``False`` the engine will
             be chosen randomly from the ones with the required capabilities.
             Only used if more than one engine is defined in the
-            :class:`Manager`. Defaults to `False`.
+            :class:`Manager`. Defaults to ``False``.
         request_id_func (callabe): A callable object that returns an unique
             id for to each session. The returned object must be hashable.
             Only used when :attr:`SessionOptions.sticky_binds` is True.
