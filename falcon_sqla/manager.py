@@ -179,14 +179,14 @@ class SessionOptions:
         write_engine_if_flushing (bool): When True a write engine is selected
             if the session is in flushing state. Only used if more than one
             engine is defined in the :class:`Manager`. Defaults to ``True``.
-        sticky_binds (bool): When ``True`` the same engine will be used for each
-            DB operation of a particular request. When ``False`` the engine will
-            be chosen randomly from the ones with the required capabilities.
-            Only used if more than one engine is defined in the
+        sticky_binds (bool): When ``True``, the same engine will be used for
+            each database operation for the same request. When ``False``, the
+            engine will be chosen randomly from the ones with the required
+            capabilities. Only used if more than one engine is defined in the
             :class:`Manager`. Defaults to ``False``.
         request_id_func (callabe): A callable object that returns an unique
             id for to each session. The returned object must be hashable.
-            Only used when :attr:`SessionOptions.sticky_binds` is True.
+            Only used when :attr:`SessionOptions.sticky_binds` is ``True``.
             Defaults to ``uuid.uuid4``.
     """
     NO_SESSION_METHODS = frozenset(['OPTIONS', 'TRACE'])
