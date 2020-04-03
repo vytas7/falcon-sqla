@@ -175,7 +175,7 @@ class SessionOptions:
             in the :class:`Manager`. Defaults to ``True``.
         write_to_rw_engines (bool): When True write operations are allowed from
             read-write engines. Only used if more than one engine is defined
-            in the :class:`Manager`. Defaults to `True`.
+            in the :class:`Manager`. Defaults to ``True``.
         write_engine_if_flushing (bool): When True a write engine is selected
             if the session is in flushing state. Only used if more than one
             engine is defined in the :class:`Manager`. Defaults to ``True``.
