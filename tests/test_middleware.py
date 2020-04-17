@@ -1,3 +1,5 @@
+import io
+
 import falcon
 import falcon.testing
 import pytest
@@ -36,7 +38,9 @@ class Languages:
         if req.get_param_as_bool('zero_division'):
             resp.body = str(0/0)
 
-        if req.get_param_as_bool('iterable_as_stream'):
+        if req.get_param_as_bool('filelike'):
+            resp.stream = io.BytesIO(b''.join(stream_names()))
+        elif req.get_param_as_bool('iterable_as_stream'):
             resp.stream = iter(tuple(stream_names()))
         else:
             resp.stream = stream_names()
@@ -74,6 +78,25 @@ def client(request, database):
     app.add_error_handler(Exception, handle_exception)
 
     return falcon.testing.TestClient(app)
+
+
+@pytest.fixture()
+def tunable_client(database):
+    def create(options):
+        manager = Manager(database.write_engine)
+        manager.add_engine(database.read_engine, 'r')
+        for key, value in options.items():
+            setattr(manager.session_options, key, value)
+
+        languages = Languages(database)
+
+        app = falcon.API(middleware=[manager.middleware])
+        app.add_route('/languages', languages)
+        app.add_route('/names', languages, suffix='names')
+
+        return falcon.testing.TestClient(app)
+
+    return create
 
 
 def test_list_languages(client):
@@ -117,3 +140,38 @@ def test_options(client):
 
     assert resp.status_code == 200
     assert resp.headers['X-Req-Session-Is-None'] == 'True'
+
+
+@pytest.mark.parametrize('wrap_stream', [True, False])
+@pytest.mark.parametrize('use_file_wrapper', [True, False])
+def test_wrap_response_stream(tunable_client, wrap_stream, use_file_wrapper):
+    def file_wrapper(obj, ignored_size=None):
+        size = 3
+        while True:
+            chunk = obj.read(size)
+            if not chunk:
+                break
+            history.append(chunk)
+            yield chunk
+            size += 1
+
+    history = []
+
+    client = tunable_client({'wrap_response_stream': wrap_stream})
+    wrapper = file_wrapper if use_file_wrapper else None
+
+    client.simulate_post('/languages',
+                         json={'name': 'Python', 'created': 1991})
+    client.simulate_post('/languages',
+                         json={'name': 'Rust', 'created': 2010})
+    client.simulate_post('/languages',
+                         json={'name': 'PHP', 'created': 1994})
+
+    resp = client.simulate_get('/names?filelike', file_wrapper=wrapper)
+    assert resp.status_code == 200
+    assert resp.text == 'Python\nRust\nPHP\n'
+
+    if use_file_wrapper:
+        assert history == [b'Pyt', b'hon\n', b'Rust\n', b'PHP\n']
+    else:
+        assert history == []

@@ -184,10 +184,14 @@ class SessionOptions:
             engine will be chosen randomly from the ones with the required
             capabilities. Only used if more than one engine is defined in the
             :class:`Manager`. Defaults to ``False``.
-        request_id_func (callabe): A callable object that returns an unique
+        request_id_func (callable): A callable object that returns an unique
             id for to each session. The returned object must be hashable.
             Only used when :attr:`SessionOptions.sticky_binds` is ``True``.
             Defaults to ``uuid.uuid4``.
+        wrap_response_stream (bool): When ``True`` (default), and the response
+            stream is set, it is wrapped with an instance
+            ``ClosingStreamWrapper`` in order to postpone SQLAlchemy session
+            commit & cleanup after the response has finished streaming.
     """
     NO_SESSION_METHODS = frozenset(['OPTIONS', 'TRACE'])
     """HTTP methods that by default do not require a DB session."""
@@ -206,6 +210,7 @@ class SessionOptions:
         'write_engine_if_flushing',
         'sticky_binds',
         'request_id_func',
+        'wrap_response_stream',
     ]
 
     def __init__(self):
@@ -218,3 +223,5 @@ class SessionOptions:
 
         self.sticky_binds = False
         self.request_id_func = uuid.uuid4
+
+        self.wrap_response_stream = True

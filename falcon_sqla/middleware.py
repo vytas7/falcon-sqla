@@ -67,7 +67,8 @@ class Middleware:
                 else:
                     session.rollback()
             finally:
-                if req_succeeded and resp.stream:
+                if (req_succeeded and resp.stream and
+                        self._options.wrap_response_stream):
                     resp.stream = ClosingStreamWrapper(resp.stream, cleanup)
                 else:
                     cleanup()
