@@ -22,9 +22,15 @@ jobs:
           - "ubuntu-20.04"
         toxenv:
           - "flake8"
-          - "py38"
           - "docs"
+          - "py38"
         include:
+          - python-version: 3.8
+            os: ubuntu-20.04
+            toxenv: postgresql
+          - python-version: pypy3
+            os: ubuntu-20.04
+            toxenv: pypy3_postgresql
           - python-version: 3.5
             os: ubuntu-20.04
             toxenv: py35
@@ -40,6 +46,19 @@ jobs:
           - python-version: 3.8
             os: windows-latest
             toxenv: py38
+
+    # Run the PostgreSQL database service.
+    services:
+      # Label used to access the service container.
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: verysecret
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     # Steps to run in each job.
     # Some are GitHub actions, others run shell commands.
@@ -62,6 +81,8 @@ jobs:
           coverage --version
 
       - name: Run tests
+        env:
+          FALCON_SQLA_POSTGRESQL_URI: postgresql://postgres:verysecret@postgres/postgres
         run: tox -e ${{ matrix.toxenv }}
 
       - name: Upload coverage to Codecov
