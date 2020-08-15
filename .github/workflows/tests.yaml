@@ -62,8 +62,6 @@ jobs:
           coverage --version
 
       - name: Run tests
-        env:
-          FALCON_SQLA_POSTGRESQL_URI: postgresql://postgres:verysecret@postgres/postgres
         run: tox -e ${{ matrix.toxenv }}
 
       - name: Upload coverage to Codecov
@@ -99,6 +97,9 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          # Map TCP port 5432 on service container to the host
+          - 5432: 5432
 
     # Steps to run in each job.
     # Some are GitHub actions, others run shell commands.
