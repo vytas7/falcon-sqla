@@ -20,6 +20,10 @@ REQUIRES = [
     'SQLAlchemy >= 1.3.0',
 ]
 EXTRAS_REQUIRE = {
+    'docs': [
+        'Sphinx >= 3.1.0',
+        'sphinx-rtd-theme >= 0.5.0',
+    ],
     'test': [
         'pytest',
         'pytest-cov',
