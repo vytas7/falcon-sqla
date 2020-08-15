@@ -59,11 +59,10 @@ jobs:
           python --version
           pip --version
           tox --version
+          coverage --version
 
       - name: Run tests
-        run: |
-          tox -e ${{ matrix.toxenv }}
-          ls -l .coverage
+        run: tox -e ${{ matrix.toxenv }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
