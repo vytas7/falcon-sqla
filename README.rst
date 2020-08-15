@@ -107,7 +107,8 @@ Object Relational Mapper that gives application developers the full power and
 flexibility of SQL.
 
 
-.. |Build Status| image:: https://api.travis-ci.org/vytas7/falcon-sqla.svg
-   :target: https://travis-ci.org/vytas7/falcon-sqla
+.. |Build Status| image:: https://github.com/vytas7/falcon-sqla/workflows/Run%20tests/badge.svg
+   :target: https://github.com/vytas7/falcon-sqla/actions?query=workflow%3A%22Run+tests%22
+
 .. |codecov.io| image:: https://codecov.io/gh/vytas7/falcon-sqla/branch/master/graphs/badge.svg
    :target: http://codecov.io/gh/vytas7/falcon-sqla
