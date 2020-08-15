@@ -99,7 +99,7 @@ jobs:
           --health-retries 5
         ports:
           # Map TCP port 5432 on service container to the host
-          - 5432: 5432
+          - "5432:5432"
 
     # Steps to run in each job.
     # Some are GitHub actions, others run shell commands.
