@@ -25,12 +25,6 @@ jobs:
           - "docs"
           - "py38"
         include:
-          - python-version: 3.8
-            os: ubuntu-20.04
-            toxenv: postgresql
-          - python-version: pypy3
-            os: ubuntu-20.04
-            toxenv: pypy3_postgresql
           - python-version: 3.5
             os: ubuntu-20.04
             toxenv: py35
@@ -46,19 +40,6 @@ jobs:
           - python-version: 3.8
             os: windows-latest
             toxenv: py38
-
-    # Run the PostgreSQL database service.
-    services:
-      # Label used to access the service container.
-      postgres:
-        image: postgres
-        env:
-          POSTGRES_PASSWORD: verysecret
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     # Steps to run in each job.
     # Some are GitHub actions, others run shell commands.
@@ -91,3 +72,54 @@ jobs:
         with:
           env_vars: PYTHON
           fail_ci_if_error: true
+
+  run_tox_with_postgres:
+    name: tox -e ${{ matrix.toxenv }} (${{matrix.python-version}} on ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python-version: 3.8
+            os: ubuntu-latest
+            toxenv: postgresql
+          - python-version: pypy3
+            os: ubuntu-latest
+            toxenv: pypy3_postgresql
+
+    # Run the PostgreSQL database service.
+    services:
+      # Label used to access the service container.
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: verysecret
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # Steps to run in each job.
+    # Some are GitHub actions, others run shell commands.
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install tox
+          python --version
+          pip --version
+          tox --version
+
+      - name: Run tests
+        env:
+          FALCON_SQLA_POSTGRESQL_URI: postgresql://postgres:verysecret@localhost/postgres
+        run: tox -e ${{ matrix.toxenv }}
