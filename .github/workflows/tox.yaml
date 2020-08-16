@@ -1,4 +1,4 @@
-name: Run tests
+name: tox
 
 on:
   # Trigger the tests workflow on push or pull requests.
