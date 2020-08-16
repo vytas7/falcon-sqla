@@ -24,8 +24,8 @@ For more installation options, see :ref:`installation`.
 Usage
 -----
 
-Configuring ``Manager`` middleware in a ``falcon.API`` (to be renamed to ``falcon.App`` in
-Falcon 3.0+):
+Configuring the :class:`falcon_sqla.Manager` middleware in a ``falcon.API`` (to
+be renamed to ``falcon.App`` in Falcon 3.0+):
 
 .. code:: python
 
@@ -45,3 +45,4 @@ More usage scenarios are covered in the :ref:`user-guide`.
 
     install
     user
+    api/index

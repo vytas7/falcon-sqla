@@ -33,12 +33,12 @@ class Manager:
             with its ``create_engine`` function. This engine is added as
             read-write.
         session_cls (type, optional): Session class used by this engine to
-            create the session. Should be a subclass of SQLAlchemy ``Session`
-            class. Defaults to :class:`.RequestSession`.
+            create the session. Should be a subclass of SQLAlchemy ``Session``
+            class. Defaults to :class:`~falcon_sqla.session.RequestSession`.
         binds (dict, optional): A dictionary that allows specifying custom
             binds on a per-entity basis in the session. See also
             https://docs.sqlalchemy.org/en/13/orm/session_api.html#sqlalchemy.orm.session.Session.params.binds.
-            Defaults to None.
+            Defaults to ``None``.
     """
     def __init__(self, engine, session_cls=RequestSession, binds=None):
         self._main_engine = engine
@@ -133,8 +133,7 @@ class Manager:
 
     @contextlib.contextmanager
     def session_scope(self, req=None, resp=None):
-        """
-        Provide a transactional scope around a series of operations.
+        """Provide a transactional scope around a series of operations.
 
         Based on the ``session_scope()`` recipe from
         https://docs.sqlalchemy.org/orm/session_basics.html.
@@ -152,8 +151,8 @@ class Manager:
 
     @property
     def middleware(self):
-        """Returns a new :class:`Middleware` instance connected to this
-        manager.
+        """Create a new :class:`~falcon_sqla.middleware.Middleware` instance
+        connected to this manager.
         """
         return Middleware(self)
 
@@ -190,8 +189,9 @@ class SessionOptions:
             Defaults to ``uuid.uuid4``.
         wrap_response_stream (bool): When ``True`` (default), and the response
             stream is set, it is wrapped with an instance
-            ``ClosingStreamWrapper`` in order to postpone SQLAlchemy session
-            commit & cleanup after the response has finished streaming.
+            :class:`~falcon_sqla.util.ClosingStreamWrapper` in order to
+            postpone SQLAlchemy session commit & cleanup after the response has
+            finished streaming.
     """
     NO_SESSION_METHODS = frozenset(['OPTIONS', 'TRACE'])
     """HTTP methods that by default do not require a DB session."""

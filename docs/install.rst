@@ -3,12 +3,18 @@
 Installation
 ============
 
+PyPi
+----
+
 To obtain the stable version, simply install the
 `falcon-sqla <https://pypi.org/project/falcon-sqla/>`__ package from PyPi:
 
 .. code:: bash
 
     $ pip install falcon-sqla
+
+GitHub
+------
 
 To install the latest commit directly from GitHub:
 
