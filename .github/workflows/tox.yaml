@@ -34,6 +34,9 @@ jobs:
           - python-version: 3.7
             os: ubuntu-20.04
             toxenv: py37
+          - python-version: 3.9
+            os: ubuntu-20.04
+            toxenv: py39
           - python-version: 3.8
             os: macos-latest
             toxenv: py38
@@ -81,6 +84,9 @@ jobs:
           - python-version: 3.8
             os: ubuntu-latest
             toxenv: postgresql
+          - python-version: 3.8
+            os: ubuntu-latest
+            toxenv: postgresql_falcon2
           - python-version: pypy3
             os: ubuntu-latest
             toxenv: pypy3_postgresql
