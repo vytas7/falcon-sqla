@@ -17,6 +17,7 @@ import random
 import uuid
 
 from sqlalchemy.orm.session import sessionmaker
+from sqlalchemy.sql import Update, Delete
 
 from .middleware import Middleware
 from .session import RequestSession
@@ -102,7 +103,7 @@ class Manager:
         """
         write = req.method not in self.session_options.safe_methods or (
             self.session_options.write_engine_if_flushing and
-            session._flushing)
+            (session._flushing or isinstance(clause, (Update, Delete))))
         engines = self._write_engines if write else self._read_engines
 
         if len(engines) == 1:
