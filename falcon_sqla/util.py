@@ -13,10 +13,13 @@
 #  limitations under the License.
 
 
-class ClosingStreamWrapper:
-    """Iterator that wraps a WSGI response iterable with support for close().
+import asyncio
 
-    This class is used to wrap WSGI response streams to provide a side effect
+
+class ClosingStreamWrapper:
+    """Iterator that wraps a WSGI/ASGI response iterable with support for close().
+
+    This class is used to wrap WSGI/ASGI response streams to provide a side effect
     when the stream is closed.
 
     If the provided response stream is file-like, i.e., it has a ``read``
@@ -35,14 +38,27 @@ class ClosingStreamWrapper:
         read = getattr(stream, 'read', None)
         if read:
             self.read = read
+        self._close_stream = getattr(self._stream, 'close', None)
+        if asyncio.iscoroutinefunction(self._close_stream):
+            self.close = self.close_async
+        elif self._close_stream:
+            self.close = self.close_sync
+        else:
+            self.close = self._close
 
     def __iter__(self):
         return self._stream
 
-    def close(self):
+    __aiter__ = __iter__
+
+    def close_sync(self):
         try:
             self._close()
         finally:
-            close_stream = getattr(self._stream, 'close', None)
-            if close_stream:
-                close_stream()
+            self._close_stream()
+
+    async def close_async(self):
+        try:
+            self._close()
+        finally:
+            await self._close_stream()

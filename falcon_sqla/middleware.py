@@ -42,6 +42,9 @@ class Middleware:
         else:
             req.context.session = None
 
+    async def process_request_async(self, req, resp):
+        self.process_request(req, resp)
+
     def process_response(self, req, resp, resource, req_succeeded):
         """
         Cleans up the session if one was provided.
@@ -72,3 +75,6 @@ class Middleware:
                     resp.stream = ClosingStreamWrapper(resp.stream, cleanup)
                 else:
                     cleanup()
+
+    async def process_response_async(self, req, resp, resource, req_succeeded):
+        self.process_response(req, resp, resource, req_succeeded)
