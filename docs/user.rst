@@ -18,15 +18,15 @@ Configuration
 * Pass the engine to the :class:`Manager() <falcon_sqla.Manager>` initializer
   as its first parameter.
 * If using the manager as a middleware component, pass its
-  :attr:`~falcon_sqla.Manager.middleware` property to the ``falcon.API()`` (to
-  be renamed to ``falcon.App`` in Falcon 3.0+) initializer:
+  :attr:`~falcon_sqla.Manager.middleware` property to a ``falcon.App()``\'s
+  middleware list:
 
 .. code:: python
 
     engine = create_engine('dialect+driver://my/database')
     manager = falcon_sqla.Manager(engine)
 
-    app = falcon.API(middleware=[manager.middleware])
+    app = falcon.App(middleware=[manager.middleware])
 
     # The database session will be available as req.context.session
 

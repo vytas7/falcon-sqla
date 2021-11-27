@@ -30,18 +30,18 @@ class Languages:
                 )]
 
             if req.get_param_as_bool('zero_division'):
-                resp.body = str(0/0)
+                resp.media = 0/0
 
 
 @pytest.fixture(params=[RequestSession, Session, FunkySession])
-def client(request, database):
+def client(request, create_app, database):
     def handle_exception(req, resp, ex, params):
         resp.status = falcon.HTTP_500
-        resp.body = type(ex).__name__
+        resp.media = {'error': type(ex).__name__}
 
     languages = Languages(database, session_cls=request.param)
 
-    app = falcon.API()
+    app = create_app()
     app.add_route('/languages', languages)
     app.add_error_handler(Exception, handle_exception)
 
@@ -58,7 +58,7 @@ def test_list_languages(client):
 def test_rollback(client):
     resp = client.simulate_get('/languages?zero_division')
     assert resp.status_code == 500
-    assert resp.text == 'ZeroDivisionError'
+    assert resp.json == {'error': 'ZeroDivisionError'}
 
 
 def test_generic_scope(database):

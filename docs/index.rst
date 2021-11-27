@@ -24,15 +24,14 @@ For more installation options, see :ref:`installation`.
 Usage
 -----
 
-Configuring the :class:`falcon_sqla.Manager` middleware in a ``falcon.API`` (to
-be renamed to ``falcon.App`` in Falcon 3.0+):
+Configuring the :class:`falcon_sqla.Manager` middleware in a ``falcon.App``:
 
 .. code:: python
 
     engine = create_engine('dialect+driver://my/database')
     manager = falcon_sqla.Manager(engine)
 
-    app = falcon.API(middleware=[manager.middleware])
+    app = falcon.App(middleware=[manager.middleware])
 
     # The database session will be available as req.context.session
 

@@ -31,10 +31,10 @@ class Languages:
 
 
 @pytest.fixture
-def client(database):
+def client(create_app, database):
     languages = Languages(database)
 
-    app = falcon.API()
+    app = create_app()
     app.add_route('/languages', languages)
 
     return falcon.testing.TestClient(app)

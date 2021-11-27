@@ -36,7 +36,7 @@ class Languages:
         resp.context_type = falcon.MEDIA_TEXT
 
         if req.get_param_as_bool('zero_division'):
-            resp.body = str(0/0)
+            resp.media = 0/0
 
         if req.get_param_as_bool('filelike'):
             resp.stream = io.BytesIO(b''.join(stream_names()))
@@ -61,10 +61,10 @@ class Languages:
 
 
 @pytest.fixture(params=['sticky_binds: no', 'sticky_binds: yes'])
-def client(request, database):
+def client(request, create_app, database):
     def handle_exception(req, resp, ex, params):
         resp.status = falcon.HTTP_500
-        resp.body = type(ex).__name__
+        resp.media = {'error': type(ex).__name__}
 
     languages = Languages(database)
 
@@ -72,7 +72,7 @@ def client(request, database):
     manager.add_engine(database.read_engine, 'r')
     manager.session_options.sticky_binds = request.param.endswith('yes')
 
-    app = falcon.API(middleware=[manager.middleware])
+    app = create_app(middleware=[manager.middleware])
     app.add_route('/languages', languages)
     app.add_route('/names', languages, suffix='names')
     app.add_error_handler(Exception, handle_exception)
@@ -81,7 +81,7 @@ def client(request, database):
 
 
 @pytest.fixture()
-def tunable_client(database):
+def tunable_client(create_app, database):
     def create(options):
         manager = Manager(database.write_engine)
         manager.add_engine(database.read_engine, 'r')
@@ -90,7 +90,7 @@ def tunable_client(database):
 
         languages = Languages(database)
 
-        app = falcon.API(middleware=[manager.middleware])
+        app = create_app(middleware=[manager.middleware])
         app.add_route('/languages', languages)
         app.add_route('/names', languages, suffix='names')
 
@@ -132,7 +132,7 @@ def test_post_languages(client):
 def test_rollback(client):
     resp = client.simulate_get('/names?zero_division')
     assert resp.status_code == 500
-    assert resp.text == 'ZeroDivisionError'
+    assert resp.json == {'error': 'ZeroDivisionError'}
 
 
 def test_options(client):

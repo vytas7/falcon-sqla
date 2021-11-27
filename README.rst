@@ -24,8 +24,8 @@ Usage
 The ``falcon_sqla`` session ``Manager`` can be used in two ways:
 
 * As a `Falcon middleware component
-  <https://falcon.readthedocs.io/en/stable/api/middleware.html>`_
-* As a context manager to explicitly provide a database session
+  <https://falcon.readthedocs.io/en/stable/api/middleware.html>`_.
+* As a context manager to explicitly provide a database session.
 
 
 Configuration
@@ -34,15 +34,14 @@ Configuration
 * Create a SQLAlchemy engine.
 * Pass the engine to the ``Manager()`` initializer as its first parameter.
 * If using the manager as a middleware component, pass its ``middleware``
-  property to the ``falcon.API()`` (to be renamed to ``falcon.App`` in
-  Falcon 3.0+) initializer:
+  property to a ``falcon.App()``\'s middleware list:
 
 .. code:: python
 
     engine = create_engine('dialect+driver://my/database')
     manager = falcon_sqla.Manager(engine)
 
-    app = falcon.API(middleware=[manager.middleware])
+    app = falcon.App(middleware=[manager.middleware])
 
     # The database session will be available as req.context.session
 
@@ -94,9 +93,9 @@ See also this SQLAlchemy recipe:
 About Falcon
 ------------
 
-`Falcon <https://falconframework.org/>`_ is the minimalist web API framework
-for building reliable, correct, and high-performance REST APIs, microservices,
-proxies, and app backends in Python.
+`Falcon <https://falconframework.org/>`_ is the minimalist REST API and
+microservices framework for Python developers, with a focus on reliability,
+correctness, and performance at scale.
 
 
 About SQLAlchemy

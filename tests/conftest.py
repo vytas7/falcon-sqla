@@ -7,11 +7,19 @@ try:
 except ImportError:
     pass
 
+import falcon
 from sqlalchemy import Column, Integer, String, ForeignKey, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
 import pytest
+
+
+@pytest.fixture
+def create_app():
+    if hasattr(falcon, 'App'):
+        return falcon.App
+    return falcon.API
 
 
 @pytest.fixture
