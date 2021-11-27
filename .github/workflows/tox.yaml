@@ -25,9 +25,6 @@ jobs:
           - "docs"
           - "py38"
         include:
-          - python-version: 3.5
-            os: ubuntu-20.04
-            toxenv: py35
           - python-version: 3.6
             os: ubuntu-20.04
             toxenv: py36
@@ -37,6 +34,9 @@ jobs:
           - python-version: 3.9
             os: ubuntu-20.04
             toxenv: py39
+          - python-version: "3.10"
+            os: ubuntu-20.04
+            toxenv: py310
           - python-version: 3.8
             os: macos-latest
             toxenv: py38

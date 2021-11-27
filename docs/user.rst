@@ -18,7 +18,8 @@ Configuration
 * Pass the engine to the :class:`Manager() <falcon_sqla.Manager>` initializer
   as its first parameter.
 * If using the manager as a middleware component, pass its
-  :attr:`~falcon_sqla.Manager.middleware` property to a ``falcon.App()``\'s
+  :attr:`~falcon_sqla.Manager.middleware` property to a
+  `falcon.App <https://falcon.readthedocs.io/en/stable/api/app.html>`__\'s
   middleware list:
 
 .. code:: python

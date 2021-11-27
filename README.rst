@@ -34,7 +34,9 @@ Configuration
 * Create a SQLAlchemy engine.
 * Pass the engine to the ``Manager()`` initializer as its first parameter.
 * If using the manager as a middleware component, pass its ``middleware``
-  property to a ``falcon.App()``\'s middleware list:
+  property to a
+  `falcon.App <https://falcon.readthedocs.io/en/stable/api/app.html>`__\'s
+  middleware list:
 
 .. code:: python
 

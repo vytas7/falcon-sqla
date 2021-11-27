@@ -24,7 +24,8 @@ For more installation options, see :ref:`installation`.
 Usage
 -----
 
-Configuring the :class:`falcon_sqla.Manager` middleware in a ``falcon.App``:
+Configuring the :class:`falcon_sqla.Manager` middleware in a
+`falcon.App <https://falcon.readthedocs.io/en/stable/api/app.html>`__:
 
 .. code:: python
 
