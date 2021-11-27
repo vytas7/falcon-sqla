@@ -19,7 +19,7 @@ class RequestSession(sqlalchemy.orm.Session):
     """
     Custom session that is associated with a Falcon request.
 
-    The Falcon request and response objects are passed inside the session
+    The Falcon request and response objects are passed inside the session's
     ``info`` context as ``'req'`` and ``'resp'`` keys, respectively.
     """
 
@@ -29,8 +29,8 @@ class RequestSession(sqlalchemy.orm.Session):
 
     def get_bind(self, mapper=None, clause=None):
         """
-        Uses the manager to get the appropriate bind when ``_manager_get_bind``
-        is defined. Otherwise the default logic is used.
+        Use the manager to get the appropriate bind when ``_manager_get_bind``
+        is defined. Otherwise, the default logic is used.
 
         This method is called by SQLAlchemy.
         """

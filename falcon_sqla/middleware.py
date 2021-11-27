@@ -27,12 +27,14 @@ class Middleware:
 
     def process_request(self, req, resp):
         """
-        Set up the SQLAlchemy session for this request.
+        Set up a SQLAlchemy session for this request.
 
         The session object is stored as ``req.context.session``.
-        When the option :attr:`SessionOptions.sticky_binds` is set to True an
-        identification of the request is stored in ``req.context.request_id``
-        (if not already present).
+
+        When the :attr:`~.SessionOptions.sticky_binds` option is set to
+        ``True``, a ``req.context.request_id`` identifier is created (if not
+        already present) by calling the
+        :attr:`~.SessionOptions.request_id_func` function.
         """
         if req.method not in self._options.no_session_methods:
             req.context.session = self._manager.get_session(req, resp)
@@ -44,10 +46,11 @@ class Middleware:
 
     def process_response(self, req, resp, resource, req_succeeded):
         """
-        Cleans up the session if one was provided.
+        Clean up the session, if one was provided.
 
-        Finalizes the session by calling commit if `req_succeeded` is True,
-        rollback otherwise. Finally it will close the session.
+        This response hook finalizes the session by calling its ``.commit()``
+        if `req_succeeded` is ``True``, and ``.rollback()`` otherwise. Finally,
+        it will close the session.
         """
         def cleanup():
             # NOTE(vytas): Break circular references between the request and
@@ -67,7 +70,7 @@ class Middleware:
                 else:
                     session.rollback()
             finally:
-                if (req_succeeded and resp.stream and
+                if (req_succeeded and resp.stream is not None and
                         self._options.wrap_response_stream):
                     resp.stream = ClosingStreamWrapper(resp.stream, cleanup)
                 else:
