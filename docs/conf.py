@@ -8,7 +8,8 @@
 # -- Project information -----------------------------------------------------
 
 import datetime
-import importlib.metadata
+
+import falcon_sqla
 
 
 now = datetime.datetime.utcnow()
@@ -18,7 +19,7 @@ copyright = '2019-{}, Vytautas Liuolia et al.'.format(now.year)
 author = 'Vytautas Liuolia et al.'
 
 # The full version, including alpha/beta/rc tags
-release = importlib.metadata.version('falcon_sqla')
+release = falcon_sqla.__version__
 
 
 # -- General configuration ---------------------------------------------------
