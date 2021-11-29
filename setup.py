@@ -12,4 +12,4 @@ if __name__ == '__main__':
         assert match, 'Could not extract module version'
         version = match.group(1)
 
-    setuptools.setup(version=version)
+    setuptools.setup(name='falcon-sqla', version=version)
