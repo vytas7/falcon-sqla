@@ -23,6 +23,7 @@ jobs:
         toxenv:
           - "flake8"
           - "docs"
+          - "twine_check"
           - "py38"
         include:
           - python-version: 3.6

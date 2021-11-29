@@ -13,11 +13,7 @@
 #  limitations under the License.
 
 from .manager import Manager
-
-# NOTE(vytas): We define the version directly here, otherwise setuptools'
-#   simplistic AST parser fails to locate it, reverting to importing, which in
-#   turn requires runtime dependencies.
-__version__ = '0.4.dev0'
+from .version import __version__
 
 __all__ = [
     'Manager',
