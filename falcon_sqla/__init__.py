@@ -13,7 +13,9 @@
 #  limitations under the License.
 
 from .manager import Manager
+from .version import __version__
 
 __all__ = [
     'Manager',
+    '__version__',
 ]

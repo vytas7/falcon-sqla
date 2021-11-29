@@ -9,7 +9,7 @@
 
 import datetime
 
-import falcon_sqla.version
+import falcon_sqla
 
 
 now = datetime.datetime.utcnow()
@@ -19,7 +19,7 @@ copyright = '2019-{}, Vytautas Liuolia et al.'.format(now.year)
 author = 'Vytautas Liuolia et al.'
 
 # The full version, including alpha/beta/rc tags
-release = falcon_sqla.version.__version__
+release = falcon_sqla.__version__
 
 
 # -- General configuration ---------------------------------------------------
