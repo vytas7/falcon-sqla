@@ -64,22 +64,18 @@ class ObjectsResource:
         resp.media = [obj.value for obj in results.scalars()]
 
 
-@falcon.runs_sync
-# Same shit with pytest.mark.asyncio
-async def test_list_objects(asyncdb):
-    await asyncdb.create_all()
+@pytest.fixture
+def client(asyncdb):
+    falcon.async_to_sync(asyncdb.create_all)
 
     app = falcon.asgi.App(middleware=[asyncdb.manager.middleware])
     app.add_route('/objects', ObjectsResource(asyncdb))
 
-    # client = falcon.testing.TestClient(app)
+    return falcon.testing.TestClient(app)
 
-    # Fails with RuntimeError: This event loop is already running
-    # Probably because we have dropped into another greenlet stack
-    # resp = client.simulate_get('/objects')
 
-    async with falcon.testing.ASGIConductor(app) as conductor:
-        resp = await conductor.simulate_get('/objects')
+def test_list_objects(client):
+    resp = client.simulate_get('/objects')
 
-        assert resp.status_code == 200
-        assert set(resp.json) == {'', '123', 'hello', 'world'}
+    assert resp.status_code == 200
+    assert set(resp.json) == {'', '123', 'hello', 'world'}
