@@ -90,4 +90,4 @@ class Middleware:
         finally:
             # TODO: Wrap stream.
 
-            session.close()
+            await session.close()

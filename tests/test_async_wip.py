@@ -61,7 +61,7 @@ class ObjectsResource:
         query = select(self._db.Object)
 
         results = await req.context.session.execute(query)
-        resp.media = [obj.data for obj in results.scalars()]
+        resp.media = [obj.value for obj in results.scalars()]
 
 
 @falcon.runs_sync
@@ -72,11 +72,14 @@ async def test_list_objects(asyncdb):
     app = falcon.asgi.App(middleware=[asyncdb.manager.middleware])
     app.add_route('/objects', ObjectsResource(asyncdb))
 
-    client = falcon.testing.TestClient(app)
+    # client = falcon.testing.TestClient(app)
 
     # Fails with RuntimeError: This event loop is already running
     # Probably because we have dropped into another greenlet stack
-    resp = client.simulate_get('/objects')
+    # resp = client.simulate_get('/objects')
 
-    assert resp.status_code == 200
-    assert set(resp.json) == {'hello'}
+    async with falcon.testing.ASGIConductor(app) as conductor:
+        resp = await conductor.simulate_get('/objects')
+
+        assert resp.status_code == 200
+        assert set(resp.json) == {'', '123', 'hello', 'world'}
