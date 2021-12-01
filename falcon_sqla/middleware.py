@@ -75,3 +75,19 @@ class Middleware:
                     resp.stream = ClosingStreamWrapper(resp.stream, cleanup)
                 else:
                     cleanup()
+
+    async def process_request_async(self, req, resp):
+        self.process_request(req, resp)
+
+    async def process_response_async(self, req, resp, resource, req_succeeded):
+        session = getattr(req.context, 'session', None)
+
+        try:
+            if req_succeeded:
+                await session.commit()
+            else:
+                await session.rollback()
+        finally:
+            # TODO: Wrap stream.
+
+            session.close()

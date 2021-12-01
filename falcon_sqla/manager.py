@@ -16,6 +16,7 @@ import contextlib
 import random
 import uuid
 
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.sql import Update, Delete
 
@@ -46,12 +47,20 @@ class Manager:
         self._engines = {engine: 'rw'}
         self._read_engines = (engine,)
         self._write_engines = (engine,)
-        self._session_kwargs = {}
 
         self._binds = binds
         self._session_cls = session_cls
-        self._Session = sessionmaker(
-            bind=engine, class_=session_cls, binds=binds)
+
+        if hasattr(engine, 'sync_engine'):
+            self._is_async = True
+            self._session_kwargs = {'sync_session_class': session_cls}
+            self._Session = sessionmaker(
+                bind=engine, class_=AsyncSession, binds=binds)
+        else:
+            self._is_async = False
+            self._session_kwargs = {}
+            self._Session = sessionmaker(
+                bind=engine, class_=session_cls, binds=binds)
 
         self.session_options = SessionOptions()
 
@@ -149,6 +158,10 @@ class Manager:
             raise
         finally:
             session.close()
+
+    @property
+    def is_async(self):
+        return self._is_async
 
     @property
     def middleware(self):
