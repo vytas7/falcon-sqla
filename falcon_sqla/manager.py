@@ -19,6 +19,7 @@ import uuid
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.sql import Update, Delete
 
+from .constants import EngineRole
 from .middleware import Middleware
 from .session import RequestSession
 
@@ -43,7 +44,7 @@ class Manager:
     """
     def __init__(self, engine, session_cls=RequestSession, binds=None):
         self._main_engine = engine
-        self._engines = {engine: 'rw'}
+        self._engines = {engine: EngineRole.READ_WRITE}
         self._read_engines = (engine,)
         self._write_engines = (engine,)
         self._session_kwargs = {}
@@ -64,30 +65,34 @@ class Manager:
                          if self._engines.get(engine) == role)
         return filtered or engines
 
-    def add_engine(self, engine, role='r'):
+    def add_engine(self, engine, role=EngineRole.READ):
         """Adds a new engine with the specified role.
 
         Args:
             engine (Engine): An instance of a SQLAlchemy Engine.
-            role ({'r', 'rw', 'w'}, optional): The role of the engine
-                ('r': read-ony, 'rw': read-write, 'w': write-only).
-                Defaults to 'r'.
+            role (EngineRole): The role of the provided engine.
+                Defaults to :attr:`~.EngineRole.READ`.
+
+                Note:
+                    In early versions of this library, `role` used to take
+                    string values: ``'r'``, ``'w'``, ``'rw'``. These values are
+                    still supported, but might be deprecated in a future
+                    release; new code should always pass enum values instead.
         """
-        if role not in {'r', 'rw', 'w'}:
-            raise ValueError("role must be one of ('r', 'rw', 'w')")
+        role = EngineRole(role)
 
         self._engines[engine] = role
-        if 'r' in role:
+        if role in {EngineRole.READ, EngineRole.READ_WRITE}:
             self._read_engines += (engine,)
-        if 'w' in role:
+        if role in {EngineRole.WRITE, EngineRole.READ_WRITE}:
             self._write_engines += (engine,)
 
         if not self.session_options.read_from_rw_engines:
             self._read_engines = self._filter_by_role(
-                self._read_engines, 'r')
+                self._read_engines, EngineRole.READ)
         if not self.session_options.write_to_rw_engines:
             self._write_engines = self._filter_by_role(
-                self._write_engines, 'w')
+                self._write_engines, EngineRole.WRITE)
 
         # NOTE(vytas): Do not tamper with custom binds.
         # NOTE(vytas): We can only rely on RequestSession and its subclasses to

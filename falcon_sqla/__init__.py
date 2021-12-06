@@ -12,10 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from .constants import EngineRole
 from .manager import Manager
 from .version import __version__
 
 __all__ = [
+    'EngineRole',
     'Manager',
     '__version__',
 ]
