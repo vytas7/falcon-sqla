@@ -19,7 +19,7 @@ import uuid
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.sql import Update, Delete
 
-from .constants import EngineRole
+from .constants import EngineRole, SessionCleanup
 from .middleware import Middleware
 from .session import RequestSession
 
@@ -75,9 +75,10 @@ class Manager:
 
                 Note:
                     In early versions of this library, `role` used to take
-                    string values: ``'r'``, ``'w'``, ``'rw'``. These values are
-                    still supported, but might be deprecated in a future
-                    release; new code should always pass enum values instead.
+                    string values: ``'r'``, ``'w'``, ``'rw'``. These values
+                    will continue to be supported in the foreseeable future for
+                    backwards compatibility, but new code should prefer passing
+                    enum constants instead.
         """
         role = EngineRole(role)
 
@@ -169,6 +170,9 @@ class SessionOptions:
     An instance of this class is exposed via :attr:`Manager.session_options`.
 
     Attributes:
+        session_cleanup (SessionCleanup): Session cleanup mode; one of the
+            :class:`~.SessionCleanup` constants.
+            Defaults to :attr:`~.SessionCleanup.COMMIT_ON_SUCCESS`.
         no_session_methods (frozenset): HTTP methods that by default do not
             require a DB session. Defaults to
             :attr:`SessionOptions.NO_SESSION_METHODS`.
@@ -209,6 +213,7 @@ class SessionOptions:
     """
 
     __slots__ = [
+        'session_cleanup',
         'no_session_methods',
         'safe_methods',
         'read_from_rw_engines',
@@ -220,6 +225,8 @@ class SessionOptions:
     ]
 
     def __init__(self):
+        self.session_cleanup = SessionCleanup.COMMIT_ON_SUCCESS
+
         self.no_session_methods = self.NO_SESSION_METHODS
         self.safe_methods = self.SAFE_METHODS
 

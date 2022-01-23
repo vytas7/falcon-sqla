@@ -13,11 +13,13 @@
 #  limitations under the License.
 
 from .constants import EngineRole
+from .constants import SessionCleanup
 from .manager import Manager
 from .version import __version__
 
 __all__ = [
     'EngineRole',
     'Manager',
+    'SessionCleanup',
     '__version__',
 ]

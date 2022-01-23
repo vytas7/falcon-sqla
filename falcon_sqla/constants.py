@@ -20,6 +20,7 @@ class EngineRole(enum.Enum):
 
     READ = 'r'
     """This engine is only suitable for reading (e.g., a read replica)."""
+
     WRITE = 'w'
     """
     This engine is only preferred for writing.
@@ -30,11 +31,12 @@ class EngineRole(enum.Enum):
         methods. This role should be seen as merely a hint that this engine
         should not be picked when a :attr:`~EngineRole.READ` one is sufficient.
     """
+
     READ_WRITE = 'rw'
     """
     This engine is suitable for all types of queries.
 
-    When :attr:`choosing<falcon_sqla.Manager.get_bind>`, this
+    When :attr:`choosing <falcon_sqla.Manager.get_bind>`, this
     engine will participate in balancing load in both :attr:`~EngineRole.READ`
     and :attr:`~EngineRole.WRITE` contexts (unless
     :attr:`~.SessionOptions.read_from_rw_engines` is set to ``True``).
@@ -42,9 +44,47 @@ class EngineRole(enum.Enum):
 
 
 class SessionCleanup(enum.Enum):
-    """Session cleanup behavior."""
+    """
+    Session cleanup behavior.
+
+    Sessions are automatically cleaned up and returned to the pool when using
+    :class:`~falcon_sqla.Manager`\\'s
+    :func:`~falcon_sqla.Manager.session_scope` or
+    :attr:`~falcon_sqla.Manager.middleware`.
+    In addition to closing the session, to the mode-specific behavior is
+    governed by the below constants.
+
+    Unless configured otherwise, the default behavior throughout this add-on is
+    :attr:`COMMIT_ON_SUCCESS`.
+    """
 
     COMMIT_ON_SUCCESS = 'default'
+    """
+    Commit on success (the default behavior).
+
+    This mode attempts to commit in the case there was no exception raised in
+    the block in question (or in the case of middleware, request-response
+    cycle), otherwise rollback.
+    """
+
     COMMIT = 'commit'
+    """
+    Always commit.
+
+    This mode always attempts to commit regardless of any exceptions raised.
+    """
+
     ROLLBACK = 'rollback'
+    """
+    Rollback.
+
+    This mode always attempts to rollback regardless of any exceptions raised.
+    """
+
     CLOSE_ONLY = 'close'
+    """
+    Close only.
+
+    This mode only closes the session. Any commit or rollback should be
+    performed explicitly in the code.
+    """
