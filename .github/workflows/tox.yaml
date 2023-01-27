@@ -26,9 +26,6 @@ jobs:
           - "twine_check"
           - "py38"
         include:
-          - python-version: 3.6
-            os: ubuntu-latest
-            toxenv: py36
           - python-version: 3.7
             os: ubuntu-latest
             toxenv: py37
@@ -41,12 +38,12 @@ jobs:
           - python-version: "3.11"
             os: ubuntu-latest
             toxenv: py311
-          - python-version: "3.10"
+          - python-version: "3.11"
             os: macos-latest
-            toxenv: py310
-          - python-version: "3.10"
+            toxenv: py311
+          - python-version: "3.11"
             os: windows-latest
-            toxenv: py310
+            toxenv: py311
 
     # Steps to run in each job.
     # Some are GitHub actions, others run shell commands.
@@ -91,7 +88,7 @@ jobs:
           - python-version: 3.8
             os: ubuntu-latest
             toxenv: postgresql_falcon2
-          - python-version: pypy3
+          - python-version: pypy3.9
             os: ubuntu-latest
             toxenv: pypy3_postgresql
 
