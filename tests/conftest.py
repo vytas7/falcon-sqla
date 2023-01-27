@@ -1,3 +1,4 @@
+import logging
 import os
 import sqlite3
 
@@ -84,10 +85,10 @@ def database():
 
     yield db
 
+    db.drop_all()
+
     if back_end == 'sqlite':
         try:
             os.unlink(sqlite_path)
         except OSError:
-            pass
-    else:
-        db.drop_all()
+            logging.exception(f'could not unlink {sqlite_path}')
