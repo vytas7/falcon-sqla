@@ -17,10 +17,10 @@ To obtain the stable version, simply install the
 
     ``falcon-sqla`` requires the following environment to run:
 
-    * Python 3.6 or newer; CPython and PyPy are supported.
-    * `Falcon <https://falconframework.org/>`_ 2.0.0 or newer (3.0+ is
+    * Python 3.7 or newer; CPython and PyPy are supported.
+    * `Falcon <https://falconframework.org/>`_ 2.0.0 or newer (3.1+ is
       recommended).
-    * `SQLAlchemy <https://www.sqlalchemy.org/>`_ 1.3.0 or newer (1.4+ is
+    * `SQLAlchemy <https://www.sqlalchemy.org/>`_ 1.3.0 or newer (2.0+ is
       recommended).
 
 GitHub
