@@ -1,3 +1,4 @@
+import logging
 import os
 import sqlite3
 
@@ -9,8 +10,11 @@ except ImportError:
 
 import falcon
 from sqlalchemy import Column, Integer, String, ForeignKey, create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+try:
+    from sqlalchemy.orm import declarative_base
+except ImportError:
+    from sqlalchemy.ext.declarative import declarative_base
 
 import pytest
 
@@ -84,10 +88,10 @@ def database():
 
     yield db
 
+    db.drop_all()
+
     if back_end == 'sqlite':
         try:
             os.unlink(sqlite_path)
         except OSError:
-            pass
-    else:
-        db.drop_all()
+            logging.exception(f'could not unlink {sqlite_path}')
