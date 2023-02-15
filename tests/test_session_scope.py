@@ -3,6 +3,7 @@ import falcon.testing
 import pytest
 from sqlalchemy.orm.session import Session
 
+from falcon_sqla.manager import SessionCleanup
 from falcon_sqla.manager import Manager
 from falcon_sqla.session import RequestSession
 
@@ -71,3 +72,26 @@ def test_generic_scope(database):
         malbolge = session.query(database.Language).first()
         assert malbolge.name == 'Malbolge'
         assert malbolge.created == 1998
+
+
+@pytest.mark.parametrize('cleanup,expected', [
+    (SessionCleanup.CLOSE_ONLY, 1999),
+    (SessionCleanup.COMMIT, 1998),
+    (SessionCleanup.COMMIT_ON_SUCCESS, 1998),
+    (SessionCleanup.ROLLBACK, 1999),
+])
+def test_session_cleanup(database, cleanup, expected):
+    manager = Manager(database.write_engine)
+    manager.session_options.session_cleanup = cleanup
+
+    with manager.session_scope() as session:
+        session.add(database.Language(name='Malbolge', created=1998+1))
+        session.commit()
+
+    with manager.session_scope() as session:
+        malbolge = session.query(database.Language).first()
+        malbolge.created = 1998
+
+    with manager.session_scope() as session:
+        malbolge = session.query(database.Language).first()
+        assert malbolge.created == expected

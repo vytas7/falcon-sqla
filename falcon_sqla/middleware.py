@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import functools
+
 from .util import ClosingStreamWrapper
 
 
@@ -48,30 +50,17 @@ class Middleware:
         """
         Clean up the session, if one was provided.
 
-        This response hook finalizes the session by calling its ``.commit()``
-        if `req_succeeded` is ``True``, and ``.rollback()`` otherwise. Finally,
-        it will close the session.
+        This response hook finalizes the session by calling the manager's
+        :func:`~falcon_sqla.Manager.close_session` method.
         """
-        def cleanup():
-            # NOTE(vytas): Break circular references between the request and
-            #   the session.
-            req.context.session = None
-            del session.info['req']
-            del session.info['resp']
-
-            session.close()
-
         session = getattr(req.context, 'session', None)
 
         if session:
-            try:
-                if req_succeeded:
-                    session.commit()
-                else:
-                    session.rollback()
-            finally:
-                if (req_succeeded and resp.stream is not None and
-                        self._options.wrap_response_stream):
-                    resp.stream = ClosingStreamWrapper(resp.stream, cleanup)
-                else:
-                    cleanup()
+            if resp.stream is not None and self._options.wrap_response_stream:
+                resp.stream = ClosingStreamWrapper(
+                    resp.stream,
+                    functools.partial(
+                        self._manager.close_session,
+                        session, req_succeeded, req, resp))
+            else:
+                self._manager.close_session(session, req_succeeded, req, resp)

@@ -24,6 +24,14 @@ from .middleware import Middleware
 from .session import RequestSession
 
 
+__all__ = ['Manager', 'SessionOptions']
+
+CLOSE_ONLY = SessionCleanup.CLOSE_ONLY
+COMMIT = SessionCleanup.COMMIT
+COMMIT_ON_SUCCESS = SessionCleanup.COMMIT_ON_SUCCESS
+ROLLBACK = SessionCleanup.ROLLBACK
+
+
 class Manager:
     """A manager for SQLAlchemy sessions.
 
@@ -128,6 +136,29 @@ class Manager:
 
         return self._Session()
 
+    def close_session(self, session, succeeded, req=None, resp=None):
+        """Close a session obtained via :func:`get_session`.
+
+        .. note:: There is no need to invoke this method manually if you are
+                  using the :func:`session_scope` context manager, or if you
+                  are using middleware.
+        """
+        session_cleanup = self.session_options.session_cleanup
+
+        try:
+            if (session_cleanup == COMMIT_ON_SUCCESS and succeeded
+                    or session_cleanup == COMMIT):
+                session.commit()
+            elif session_cleanup != CLOSE_ONLY:
+                session.rollback()
+        finally:
+            if req and resp:
+                # NOTE(vytas): Break circular references between the request
+                #   and session in case the latter was stored in req.context.
+                del session.info['req']
+                del session.info['resp']
+            session.close()
+
     @property
     def read_engines(self):
         """A tuple of read capable engines."""
@@ -142,19 +173,22 @@ class Manager:
     def session_scope(self, req=None, resp=None):
         """Provide a transactional scope around a series of operations.
 
+        The session is obtained via :func:`get_sesion`, and finalized using
+        :func:`close_session` upon exiting the context manager.
+
         Based on the ``session_scope()`` recipe from
         https://docs.sqlalchemy.org/orm/session_basics.html.
         """
         session = self.get_session(req, resp)
+        succeeded = True
 
         try:
             yield session
-            session.commit()
         except Exception:
-            session.rollback()
+            succeeded = False
             raise
         finally:
-            session.close()
+            self.close_session(session, succeeded, req, resp)
 
     @property
     def middleware(self):
