@@ -44,8 +44,7 @@ class EngineRole(enum.Enum):
 
 
 class SessionCleanup(enum.Enum):
-    """
-    Session cleanup behavior.
+    """Session cleanup behavior.
 
     Sessions are automatically cleaned up and returned to the pool when using
     :class:`~falcon_sqla.Manager`\\'s
