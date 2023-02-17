@@ -22,8 +22,7 @@ class EngineRole(enum.Enum):
     """This engine is only suitable for reading (e.g., a read replica)."""
 
     WRITE = 'w'
-    """
-    This engine is only preferred for writing.
+    """This engine is only preferred for writing.
 
     Note:
         A :attr:`~EngineRole.WRITE` engine might still receive read queries
@@ -33,8 +32,7 @@ class EngineRole(enum.Enum):
     """
 
     READ_WRITE = 'rw'
-    """
-    This engine is suitable for all types of queries.
+    """This engine is suitable for all types of queries.
 
     When :attr:`choosing <falcon_sqla.Manager.get_bind>`, this
     engine will participate in balancing load in both :attr:`~EngineRole.READ`
@@ -67,22 +65,19 @@ class SessionCleanup(enum.Enum):
     """
 
     COMMIT = 'commit'
-    """
-    Always commit.
+    """Always commit.
 
     This mode always attempts to commit regardless of any exceptions raised.
     """
 
     ROLLBACK = 'rollback'
-    """
-    Rollback.
+    """Rollback.
 
     This mode always attempts to rollback regardless of any exceptions raised.
     """
 
     CLOSE_ONLY = 'close'
-    """
-    Close only.
+    """Close only.
 
     This mode only closes the session. Any commit or rollback should be
     performed explicitly in the code.

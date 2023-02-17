@@ -95,3 +95,28 @@ def test_session_cleanup(database, cleanup, expected):
     with manager.session_scope() as session:
         malbolge = session.query(database.Language).first()
         assert malbolge.created == expected
+
+
+@pytest.mark.parametrize('cleanup,expected', [
+    (SessionCleanup.CLOSE_ONLY, 1999),
+    (SessionCleanup.COMMIT, 1998),
+    (SessionCleanup.COMMIT_ON_SUCCESS, 1999),
+    (SessionCleanup.ROLLBACK, 1999),
+])
+def test_commit_on_error(database, cleanup, expected):
+    manager = Manager(database.write_engine)
+    manager.session_options.session_cleanup = cleanup
+
+    with manager.session_scope() as session:
+        session.add(database.Language(name='Malbolge', created=1998+1))
+        session.commit()
+
+    with pytest.raises(ZeroDivisionError):
+        with manager.session_scope() as session:
+            malbolge = session.query(database.Language).first()
+            malbolge.created = 1998
+            malbolge.statement = 0/0
+
+    with manager.session_scope() as session:
+        malbolge = session.query(database.Language).first()
+        assert malbolge.created == expected
