@@ -144,13 +144,17 @@ class Manager:
                   are using middleware.
         """
         session_cleanup = self.session_options.session_cleanup
+        attempt_commit = session_cleanup == COMMIT_ON_SUCCESS and succeeded
 
         try:
-            if (session_cleanup == COMMIT_ON_SUCCESS and succeeded
-                    or session_cleanup == COMMIT):
+            if attempt_commit or session_cleanup == COMMIT:
                 session.commit()
             elif session_cleanup != CLOSE_ONLY:
                 session.rollback()
+        except Exception:
+            if attempt_commit:
+                session.rollback()
+            raise
         finally:
             if req and resp:
                 # NOTE(vytas): Break circular references between the request

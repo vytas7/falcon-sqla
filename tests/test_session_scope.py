@@ -1,6 +1,7 @@
 import falcon
 import falcon.testing
 import pytest
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.session import Session
 
 from falcon_sqla.manager import SessionCleanup
@@ -103,7 +104,7 @@ def test_session_cleanup(database, cleanup, expected):
     (SessionCleanup.COMMIT_ON_SUCCESS, 1999),
     (SessionCleanup.ROLLBACK, 1999),
 ])
-def test_commit_on_error(database, cleanup, expected):
+def test_close_on_error(database, cleanup, expected):
     manager = Manager(database.write_engine)
     manager.session_options.session_cleanup = cleanup
 
@@ -120,3 +121,22 @@ def test_commit_on_error(database, cleanup, expected):
     with manager.session_scope() as session:
         malbolge = session.query(database.Language).first()
         assert malbolge.created == expected
+
+
+@pytest.mark.parametrize('cleanup,expected', [
+    (SessionCleanup.COMMIT, 1998),
+    (SessionCleanup.COMMIT_ON_SUCCESS, 1999),
+])
+def test_close_error_on_commit(database, cleanup, expected):
+    manager = Manager(database.write_engine)
+    manager.session_options.session_cleanup = cleanup
+
+    with manager.session_scope() as session:
+        malbolge = database.Language(name='Malbolge', created=1998)
+        session.add(malbolge)
+        session.commit()
+        idn = malbolge.id
+
+    with pytest.raises(IntegrityError):
+        with manager.session_scope() as session:
+            session.add(database.Language(id=idn, name='Error', created=2525))

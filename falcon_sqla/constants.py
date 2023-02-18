@@ -53,6 +53,11 @@ class SessionCleanup(enum.Enum):
 
     Unless configured otherwise, the default behavior throughout this add-on is
     :attr:`COMMIT_ON_SUCCESS`.
+
+    .. note::
+       Customizable session cleanup complements SQLAlchemy's "reset on return"
+       behaviour, see also:
+       https://docs.sqlalchemy.org/en/20/core/pooling.html#pool-reset-on-return.
     """
 
     COMMIT_ON_SUCCESS = 'default'
@@ -62,18 +67,23 @@ class SessionCleanup(enum.Enum):
     This mode attempts to commit in the case there was no exception raised in
     the block in question (or in the case of middleware, request-response
     cycle), otherwise rollback.
+
+    In this mode, in the case the attempt to commit results in an exception
+    itself, it is also followed up with a rollback.
     """
 
     COMMIT = 'commit'
     """Always commit.
 
     This mode always attempts to commit regardless of any exceptions raised.
+
+    Even if the commit attempt raises an exception, no rollback is performed.
     """
 
     ROLLBACK = 'rollback'
     """Rollback.
 
-    This mode always attempts to rollback regardless of any exceptions raised.
+    This mode always attempts to roll back regardless of any exceptions raised.
     """
 
     CLOSE_ONLY = 'close'
