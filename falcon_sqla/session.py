@@ -1,4 +1,4 @@
-#  Copyright 2020 Vytautas Liuolia
+#  Copyright 2020-2023 Vytautas Liuolia
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -37,4 +37,4 @@ class RequestSession(sqlalchemy.orm.Session):
         if self._manager_get_bind:
             return self._manager_get_bind(
                 session=self, mapper=mapper, clause=clause, **self.info)
-        return super().get_bind(mapper, clause)
+        return super().get_bind(mapper=mapper, clause=clause)

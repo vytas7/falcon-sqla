@@ -68,7 +68,7 @@ the runtime bind selection logic:
     manager = falcon_sqla.Manager(engine)
 
     read_replica = create_engine('dialect+driver://my/database.replica')
-    manager.add_engine(read_replica, 'r')
+    manager.add_engine(read_replica, falcon_sqla.EngineRole.READ)
 
 The :func:`Manager.get_bind() <falcon_sqla.Manager.get_bind>` method can be
 overridden to implement custom engine selection logic for more complex use

@@ -1,4 +1,4 @@
-#  Copyright 2020 Vytautas Liuolia
+#  Copyright 2020-2023 Vytautas Liuolia
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,8 +20,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.sql import Update, Delete
 
+from .constants import EngineRole, SessionCleanup
 from .middleware import Middleware
 from .session import RequestSession
+
+
+__all__ = ['Manager', 'SessionOptions']
+
+CLOSE_ONLY = SessionCleanup.CLOSE_ONLY
+COMMIT = SessionCleanup.COMMIT
+COMMIT_ON_SUCCESS = SessionCleanup.COMMIT_ON_SUCCESS
+ROLLBACK = SessionCleanup.ROLLBACK
 
 
 class Manager:
@@ -44,7 +53,7 @@ class Manager:
     """
     def __init__(self, engine, session_cls=RequestSession, binds=None):
         self._main_engine = engine
-        self._engines = {engine: 'rw'}
+        self._engines = {engine: EngineRole.READ_WRITE}
         self._read_engines = (engine,)
         self._write_engines = (engine,)
 
@@ -73,30 +82,35 @@ class Manager:
                          if self._engines.get(engine) == role)
         return filtered or engines
 
-    def add_engine(self, engine, role='r'):
+    def add_engine(self, engine, role=EngineRole.READ):
         """Adds a new engine with the specified role.
 
         Args:
             engine (Engine): An instance of a SQLAlchemy Engine.
-            role ({'r', 'rw', 'w'}, optional): The role of the engine
-                ('r': read-ony, 'rw': read-write, 'w': write-only).
-                Defaults to 'r'.
+            role (EngineRole): The role of the provided engine.
+                Defaults to :attr:`~.EngineRole.READ`.
+
+                Note:
+                    In early versions of this library, `role` used to take
+                    string values: ``'r'``, ``'w'``, ``'rw'``. These values
+                    will continue to be supported in the foreseeable future for
+                    backwards compatibility, but new code should prefer passing
+                    enum constants instead.
         """
-        if role not in {'r', 'rw', 'w'}:
-            raise ValueError("role must be one of ('r', 'rw', 'w')")
+        role = EngineRole(role)
 
         self._engines[engine] = role
-        if 'r' in role:
+        if role in {EngineRole.READ, EngineRole.READ_WRITE}:
             self._read_engines += (engine,)
-        if 'w' in role:
+        if role in {EngineRole.WRITE, EngineRole.READ_WRITE}:
             self._write_engines += (engine,)
 
         if not self.session_options.read_from_rw_engines:
             self._read_engines = self._filter_by_role(
-                self._read_engines, 'r')
+                self._read_engines, EngineRole.READ)
         if not self.session_options.write_to_rw_engines:
             self._write_engines = self._filter_by_role(
-                self._write_engines, 'w')
+                self._write_engines, EngineRole.WRITE)
 
         # NOTE(vytas): Do not tamper with custom binds.
         # NOTE(vytas): We can only rely on RequestSession and its subclasses to
@@ -131,6 +145,33 @@ class Manager:
 
         return self._Session()
 
+    def close_session(self, session, succeeded, req=None, resp=None):
+        """Close a session obtained via :func:`get_session`.
+
+        .. note:: There is no need to invoke this method manually if you are
+                  using the :func:`session_scope` context manager, or if you
+                  are using middleware.
+        """
+        session_cleanup = self.session_options.session_cleanup
+        attempt_commit = session_cleanup == COMMIT_ON_SUCCESS and succeeded
+
+        try:
+            if attempt_commit or session_cleanup == COMMIT:
+                session.commit()
+            elif session_cleanup != CLOSE_ONLY:
+                session.rollback()
+        except Exception:
+            if attempt_commit:
+                session.rollback()
+            raise
+        finally:
+            if req and resp:
+                # NOTE(vytas): Break circular references between the request
+                #   and session in case the latter was stored in req.context.
+                del session.info['req']
+                del session.info['resp']
+            session.close()
+
     @property
     def read_engines(self):
         """A tuple of read capable engines."""
@@ -145,19 +186,22 @@ class Manager:
     def session_scope(self, req=None, resp=None):
         """Provide a transactional scope around a series of operations.
 
+        The session is obtained via :func:`get_sesion`, and finalized using
+        :func:`close_session` upon exiting the context manager.
+
         Based on the ``session_scope()`` recipe from
         https://docs.sqlalchemy.org/orm/session_basics.html.
         """
         session = self.get_session(req, resp)
+        succeeded = True
 
         try:
             yield session
-            session.commit()
         except Exception:
-            session.rollback()
+            succeeded = False
             raise
         finally:
-            session.close()
+            self.close_session(session, succeeded, req, resp)
 
     @property
     def is_async(self):
@@ -177,6 +221,9 @@ class SessionOptions:
     An instance of this class is exposed via :attr:`Manager.session_options`.
 
     Attributes:
+        session_cleanup (SessionCleanup): Session cleanup mode; one of the
+            :class:`~.SessionCleanup` constants.
+            Defaults to :attr:`~.SessionCleanup.COMMIT_ON_SUCCESS`.
         no_session_methods (frozenset): HTTP methods that by default do not
             require a DB session. Defaults to
             :attr:`SessionOptions.NO_SESSION_METHODS`.
@@ -217,6 +264,7 @@ class SessionOptions:
     """
 
     __slots__ = [
+        'session_cleanup',
         'no_session_methods',
         'safe_methods',
         'read_from_rw_engines',
@@ -228,6 +276,8 @@ class SessionOptions:
     ]
 
     def __init__(self):
+        self.session_cleanup = SessionCleanup.COMMIT_ON_SUCCESS
+
         self.no_session_methods = self.NO_SESSION_METHODS
         self.safe_methods = self.SAFE_METHODS
 
