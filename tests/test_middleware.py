@@ -145,20 +145,26 @@ def test_options(client):
 @pytest.mark.parametrize('wrap_stream', [True, False])
 @pytest.mark.parametrize('use_file_wrapper', [True, False])
 def test_wrap_response_stream(tunable_client, wrap_stream, use_file_wrapper):
-    def file_wrapper(obj, ignored_size=None):
-        size = 3
-        while True:
-            chunk = obj.read(size)
-            if not chunk:
-                break
-            history.append(chunk)
-            yield chunk
-            size += 1
+    class FileWrapper:
+        def __init__(self, filelike, ignored_size=8192):
+            self._filelike = filelike
+            if hasattr(filelike, 'close'):
+                self.close = filelike.close
+
+        def __iter__(self):
+            size = 3
+            while True:
+                chunk = self._filelike.read(size)
+                if not chunk:
+                    break
+                history.append(chunk)
+                yield chunk
+                size += 1
 
     history = []
 
     client = tunable_client({'wrap_response_stream': wrap_stream})
-    wrapper = file_wrapper if use_file_wrapper else None
+    wrapper = FileWrapper if use_file_wrapper else None
 
     client.simulate_post('/languages',
                          json={'name': 'Python', 'created': 1991})

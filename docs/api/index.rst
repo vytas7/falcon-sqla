@@ -5,6 +5,7 @@ Module Reference
     :maxdepth: 1
 
     manager
+    constants
     options
     middleware
     session
