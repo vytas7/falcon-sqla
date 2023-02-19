@@ -6,8 +6,8 @@ from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.future import select
+from sqlalchemy.orm import declarative_base
 
 from falcon_sqla import Manager
 
@@ -43,13 +43,19 @@ class SpeedyDatabase:
 
             await session.commit()
 
-    # def drop_all(self):
-    #     self.Base.metadata.create_all(self.write_engine)
+    async def drop_all(self):
+        async with self.engine.begin() as conn:
+            await conn.run_sync(self.Base.metadata.drop_all)
 
 
 @pytest.fixture
 def asyncdb():
-    return SpeedyDatabase()
+    db = SpeedyDatabase()
+    falcon.async_to_sync(db.create_all)
+
+    yield db
+
+    falcon.async_to_sync(db.drop_all)
 
 
 class ObjectsResource:
@@ -58,10 +64,31 @@ class ObjectsResource:
         self._db = db
 
     async def on_get(self, req, resp):
-        query = select(self._db.Object)
+        statement = select(self._db.Object)
 
-        results = await req.context.session.execute(query)
+        results = await req.context.session.execute(statement)
         resp.media = [obj.value for obj in results.scalars()]
+
+    async def on_get_stream(self, req, resp):
+        statement = select(self._db.Object)
+
+        # TODO: we cannot truly stream because we haven't implemented stream
+        #   wrapper in middleware.py.
+        text = ''
+        result = await req.context.session.stream_scalars(statement)
+        async for obj in result:
+            text += f'{obj.value}\n'
+
+        resp.text = text
+
+    async def on_post(self, req, resp):
+        media = await req.get_media()
+        session = req.context.session
+
+        session.add(self._db.Object(value=media.get('value', '')))
+        await session.commit()
+
+        resp.status = falcon.HTTP_CREATED
 
 
 @pytest.fixture
@@ -69,7 +96,10 @@ def client(asyncdb):
     falcon.async_to_sync(asyncdb.create_all)
 
     app = falcon.asgi.App(middleware=[asyncdb.manager.middleware])
-    app.add_route('/objects', ObjectsResource(asyncdb))
+
+    obj_resource = ObjectsResource(asyncdb)
+    app.add_route('/objects', obj_resource)
+    app.add_route('/objects/stream', obj_resource, suffix='stream')
 
     return falcon.testing.TestClient(app)
 
@@ -79,3 +109,18 @@ def test_list_objects(client):
 
     assert resp.status_code == 200
     assert set(resp.json) == {'', '123', 'hello', 'world'}
+
+
+def test_stream_scalars(client):
+    resp = client.simulate_get('/objects/stream')
+
+    assert resp.status_code == 200
+    assert set(resp.text.split()) == {'123', 'hello', 'world'}
+
+
+def test_post_object(client):
+    resp1 = client.simulate_post('/objects', json={'value': 'another'})
+    assert resp1.status_code == 201
+
+    resp2 = client.simulate_get('/objects')
+    assert 'another' in resp2.json
