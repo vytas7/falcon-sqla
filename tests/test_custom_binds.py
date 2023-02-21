@@ -7,7 +7,6 @@ from falcon_sqla import Manager
 
 
 class Languages:
-
     def __init__(self, database):
         misconfigured = create_engine('sqlite:////misconfigured')
         binds = {database.Language: database.read_engine}
@@ -25,9 +24,11 @@ class Languages:
                     'name': lang.name,
                 }
                 for lang in (
-                        session.query(self.db.Language)
-                        .order_by(self.db.Language.id)
-                )]
+                    session.query(self.db.Language).order_by(
+                        self.db.Language.id
+                    )
+                )
+            ]
 
 
 @pytest.fixture

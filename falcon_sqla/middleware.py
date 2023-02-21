@@ -23,6 +23,7 @@ class Middleware:
     Args:
         manager (Manager): Manager instance to use in this middleware.
     """
+
     def __init__(self, manager):
         self._manager = manager
         self._options = manager.session_options
@@ -40,8 +41,9 @@ class Middleware:
         """
         if req.method not in self._options.no_session_methods:
             req.context.session = self._manager.get_session(req, resp)
-            if (self._options.sticky_binds and
-                    not getattr(req.context, 'request_id', None)):
+            if self._options.sticky_binds and not getattr(
+                req.context, 'request_id', None
+            ):
                 req.context.request_id = self._options.request_id_func()
         else:
             req.context.session = None
@@ -61,7 +63,12 @@ class Middleware:
                     resp.stream,
                     functools.partial(
                         self._manager.close_session,
-                        session, req_succeeded, req, resp))
+                        session,
+                        req_succeeded,
+                        req,
+                        resp,
+                    ),
+                )
             else:
                 self._manager.close_session(session, req_succeeded, req, resp)
 

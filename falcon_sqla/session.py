@@ -36,5 +36,6 @@ class RequestSession(sqlalchemy.orm.Session):
         """
         if self._manager_get_bind:
             return self._manager_get_bind(
-                session=self, mapper=mapper, clause=clause, **self.info)
+                session=self, mapper=mapper, clause=clause, **self.info
+            )
         return super().get_bind(mapper=mapper, clause=clause)

@@ -34,12 +34,14 @@ class SpeedyDatabase:
 
         async with self.manager.get_session() as session:
             async with session.begin():
-                session.add_all([
-                    self.Object(value='hello'),
-                    self.Object(value='world'),
-                    self.Object(value='123'),
-                    self.Object(value=''),
-                ])
+                session.add_all(
+                    [
+                        self.Object(value='hello'),
+                        self.Object(value='world'),
+                        self.Object(value='123'),
+                        self.Object(value=''),
+                    ]
+                )
 
             await session.commit()
 
@@ -59,7 +61,6 @@ def asyncdb():
 
 
 class ObjectsResource:
-
     def __init__(self, db):
         self._db = db
 
