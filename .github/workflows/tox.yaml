@@ -21,6 +21,7 @@ jobs:
         os:
           - "ubuntu-latest"
         toxenv:
+          - "blue"
           - "flake8"
           - "docs"
           - "twine_check"
