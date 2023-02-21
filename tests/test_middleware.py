@@ -8,7 +8,6 @@ from falcon_sqla import Manager
 
 
 class Languages:
-
     def __init__(self, db):
         self.db = db
 
@@ -20,15 +19,16 @@ class Languages:
                 'created': lang.created,
             }
             for lang in (
-                req.context.session.query(self.db.Language)
-                .order_by(self.db.Language.created)
-            )]
+                req.context.session.query(self.db.Language).order_by(
+                    self.db.Language.created
+                )
+            )
+        ]
 
     def on_get_names(self, req, resp):
         def stream_names():
-            for lang in (
-                req.context.session.query(self.db.Language)
-                .order_by(self.db.Language.id)
+            for lang in req.context.session.query(self.db.Language).order_by(
+                self.db.Language.id
             ):
                 yield lang.name.encode()
                 yield b'\n'
@@ -36,7 +36,7 @@ class Languages:
         resp.context_type = falcon.MEDIA_TEXT
 
         if req.get_param_as_bool('zero_division'):
-            resp.media = 0/0
+            resp.media = 0 / 0
 
         if req.get_param_as_bool('filelike'):
             resp.stream = io.BytesIO(b''.join(stream_names()))
@@ -47,7 +47,8 @@ class Languages:
 
     def on_post(self, req, resp):
         language = self.db.Language(
-            name=req.media['name'], created=req.media.get('created'))
+            name=req.media['name'], created=req.media.get('created')
+        )
         req.context.session.add(language)
         resp.status = falcon.HTTP_CREATED
 
@@ -56,8 +57,9 @@ class Languages:
         resp.status = falcon.HTTP_OK
 
         resp.set_header('Allow', 'OPTIONS, GET, POST')
-        resp.set_header('X-Req-Session-Is-None',
-                        str(req.context.session is None))
+        resp.set_header(
+            'X-Req-Session-Is-None', str(req.context.session is None)
+        )
 
 
 @pytest.fixture(params=['sticky_binds: no', 'sticky_binds: yes'])
@@ -107,12 +109,11 @@ def test_list_languages(client):
 
 
 def test_post_languages(client):
-    client.simulate_post('/languages',
-                         json={'name': 'Python', 'created': 1991})
-    client.simulate_post('/languages',
-                         json={'name': 'Rust', 'created': 2010})
-    client.simulate_post('/languages',
-                         json={'name': 'PHP', 'created': 1994})
+    client.simulate_post(
+        '/languages', json={'name': 'Python', 'created': 1991}
+    )
+    client.simulate_post('/languages', json={'name': 'Rust', 'created': 2010})
+    client.simulate_post('/languages', json={'name': 'PHP', 'created': 1994})
 
     resp1 = client.simulate_get('/languages')
     assert resp1.json == [
@@ -166,12 +167,11 @@ def test_wrap_response_stream(tunable_client, wrap_stream, use_file_wrapper):
     client = tunable_client({'wrap_response_stream': wrap_stream})
     wrapper = FileWrapper if use_file_wrapper else None
 
-    client.simulate_post('/languages',
-                         json={'name': 'Python', 'created': 1991})
-    client.simulate_post('/languages',
-                         json={'name': 'Rust', 'created': 2010})
-    client.simulate_post('/languages',
-                         json={'name': 'PHP', 'created': 1994})
+    client.simulate_post(
+        '/languages', json={'name': 'Python', 'created': 1991}
+    )
+    client.simulate_post('/languages', json={'name': 'Rust', 'created': 2010})
+    client.simulate_post('/languages', json={'name': 'PHP', 'created': 1994})
 
     resp = client.simulate_get('/names?filelike', file_wrapper=wrapper)
     assert resp.status_code == 200

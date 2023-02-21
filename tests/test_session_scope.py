@@ -14,7 +14,6 @@ class FunkySession(Session):
 
 
 class Languages:
-
     def __init__(self, database, session_cls):
         self.db = database
         self.manager = Manager(database.write_engine, session_cls=session_cls)
@@ -27,12 +26,14 @@ class Languages:
                     'name': lang.name,
                 }
                 for lang in (
-                        session.query(self.db.Language)
-                        .order_by(self.db.Language.id)
-                )]
+                    session.query(self.db.Language).order_by(
+                        self.db.Language.id
+                    )
+                )
+            ]
 
             if req.get_param_as_bool('zero_division'):
-                resp.media = 0/0
+                resp.media = 0 / 0
 
 
 @pytest.fixture(params=[RequestSession, Session, FunkySession])
@@ -75,18 +76,21 @@ def test_generic_scope(database):
         assert malbolge.created == 1998
 
 
-@pytest.mark.parametrize('cleanup,expected', [
-    (SessionCleanup.CLOSE_ONLY, 1999),
-    (SessionCleanup.COMMIT, 1998),
-    (SessionCleanup.COMMIT_ON_SUCCESS, 1998),
-    (SessionCleanup.ROLLBACK, 1999),
-])
+@pytest.mark.parametrize(
+    'cleanup,expected',
+    [
+        (SessionCleanup.CLOSE_ONLY, 1999),
+        (SessionCleanup.COMMIT, 1998),
+        (SessionCleanup.COMMIT_ON_SUCCESS, 1998),
+        (SessionCleanup.ROLLBACK, 1999),
+    ],
+)
 def test_session_cleanup(database, cleanup, expected):
     manager = Manager(database.write_engine)
     manager.session_options.session_cleanup = cleanup
 
     with manager.session_scope() as session:
-        session.add(database.Language(name='Malbolge', created=1998+1))
+        session.add(database.Language(name='Malbolge', created=1998 + 1))
         session.commit()
 
     with manager.session_scope() as session:
@@ -98,35 +102,41 @@ def test_session_cleanup(database, cleanup, expected):
         assert malbolge.created == expected
 
 
-@pytest.mark.parametrize('cleanup,expected', [
-    (SessionCleanup.CLOSE_ONLY, 1999),
-    (SessionCleanup.COMMIT, 1998),
-    (SessionCleanup.COMMIT_ON_SUCCESS, 1999),
-    (SessionCleanup.ROLLBACK, 1999),
-])
+@pytest.mark.parametrize(
+    'cleanup,expected',
+    [
+        (SessionCleanup.CLOSE_ONLY, 1999),
+        (SessionCleanup.COMMIT, 1998),
+        (SessionCleanup.COMMIT_ON_SUCCESS, 1999),
+        (SessionCleanup.ROLLBACK, 1999),
+    ],
+)
 def test_close_on_error(database, cleanup, expected):
     manager = Manager(database.write_engine)
     manager.session_options.session_cleanup = cleanup
 
     with manager.session_scope() as session:
-        session.add(database.Language(name='Malbolge', created=1998+1))
+        session.add(database.Language(name='Malbolge', created=1998 + 1))
         session.commit()
 
     with pytest.raises(ZeroDivisionError):
         with manager.session_scope() as session:
             malbolge = session.query(database.Language).first()
             malbolge.created = 1998
-            malbolge.statement = 0/0
+            malbolge.statement = 0 / 0
 
     with manager.session_scope() as session:
         malbolge = session.query(database.Language).first()
         assert malbolge.created == expected
 
 
-@pytest.mark.parametrize('cleanup,expected', [
-    (SessionCleanup.COMMIT, 1998),
-    (SessionCleanup.COMMIT_ON_SUCCESS, 1999),
-])
+@pytest.mark.parametrize(
+    'cleanup,expected',
+    [
+        (SessionCleanup.COMMIT, 1998),
+        (SessionCleanup.COMMIT_ON_SUCCESS, 1999),
+    ],
+)
 def test_close_error_on_commit(database, cleanup, expected):
     manager = Manager(database.write_engine)
     manager.session_options.session_cleanup = cleanup

@@ -4,6 +4,7 @@ import sqlite3
 
 try:
     from psycopg2cffi import compat
+
     compat.register()
 except ImportError:
     pass
@@ -11,6 +12,7 @@ except ImportError:
 import falcon
 from sqlalchemy import Column, Integer, String, ForeignKey, create_engine
 from sqlalchemy.orm import relationship
+
 try:
     from sqlalchemy.orm import declarative_base
 except ImportError:
@@ -63,11 +65,11 @@ def database():
         back_end = 'postgresql'
         write_engine = create_engine(postgres_uri, echo=True)
         args = {'options': '-c default_transaction_read_only=on'}
-        read_engine = create_engine(
-            postgres_uri, echo=True, connect_args=args)
+        read_engine = create_engine(postgres_uri, echo=True, connect_args=args)
     else:
         sqlite_path = os.environ.get(
-            'FALCON_SQLA_TEST_DB', '/tmp/falcon-sqla/test.db')
+            'FALCON_SQLA_TEST_DB', '/tmp/falcon-sqla/test.db'
+        )
         if not os.path.exists(os.path.dirname(sqlite_path)):
             os.makedirs(os.path.dirname(sqlite_path))
 
@@ -81,7 +83,8 @@ def database():
         uri = 'sqlite:///' + sqlite_path
         write_engine = create_engine(uri, echo=True)
         read_engine = create_engine(
-            uri + '?mode=ro', creator=connect_ro, echo=True)
+            uri + '?mode=ro', creator=connect_ro, echo=True
+        )
 
     db = Database(back_end, write_engine, read_engine)
     db.create_all()

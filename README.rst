@@ -1,4 +1,4 @@
-|Build Status| |PyPi| |Documentation| |codecov.io|
+|Build Status| |PyPi| |Documentation| |codecov.io| |Blue|
 
 Falcon Middleware: SQLAlchemy Integration
 =========================================
@@ -119,3 +119,7 @@ flexibility of SQL.
 
 .. |codecov.io| image:: https://codecov.io/gh/vytas7/falcon-sqla/branch/master/graphs/badge.svg
    :target: http://codecov.io/gh/vytas7/falcon-sqla
+
+.. |Blue| image:: https://img.shields.io/badge/code%20style-blue-blue.svg
+    :target: https://blue.readthedocs.io/
+    :alt: code style: blue

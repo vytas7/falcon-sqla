@@ -50,6 +50,7 @@ class Manager:
             https://docs.sqlalchemy.org/en/13/orm/session_api.html#sqlalchemy.orm.session.Session.params.binds.
             Defaults to ``None``.
     """
+
     def __init__(self, engine, session_cls=RequestSession, binds=None):
         self._main_engine = engine
         self._engines = {engine: EngineRole.READ_WRITE}
@@ -60,7 +61,8 @@ class Manager:
         self._binds = binds
         self._session_cls = session_cls
         self._Session = sessionmaker(
-            bind=engine, class_=session_cls, binds=binds)
+            bind=engine, class_=session_cls, binds=binds
+        )
 
         self.session_options = SessionOptions()
 
@@ -69,8 +71,9 @@ class Manager:
 
         NOTE: if no engine with a role is found, all the engine are returned.
         """
-        filtered = tuple(engine for engine in engines
-                         if self._engines.get(engine) == role)
+        filtered = tuple(
+            engine for engine in engines if self._engines.get(engine) == role
+        )
         return filtered or engines
 
     def add_engine(self, engine, role=EngineRole.READ):
@@ -98,10 +101,12 @@ class Manager:
 
         if not self.session_options.read_from_rw_engines:
             self._read_engines = self._filter_by_role(
-                self._read_engines, EngineRole.READ)
+                self._read_engines, EngineRole.READ
+            )
         if not self.session_options.write_to_rw_engines:
             self._write_engines = self._filter_by_role(
-                self._write_engines, EngineRole.WRITE)
+                self._write_engines, EngineRole.WRITE
+            )
 
         # NOTE(vytas): Do not tamper with custom binds.
         # NOTE(vytas): We can only rely on RequestSession and its subclasses to
@@ -116,8 +121,9 @@ class Manager:
         if multiple engines are defined.
         """
         write = req.method not in self.session_options.safe_methods or (
-            self.session_options.write_engine_if_flushing and
-            (session._flushing or isinstance(clause, (Update, Delete))))
+            self.session_options.write_engine_if_flushing
+            and (session._flushing or isinstance(clause, (Update, Delete)))
+        )
         engines = self._write_engines if write else self._read_engines
 
         if len(engines) == 1:
@@ -132,7 +138,8 @@ class Manager:
         """Returns a new session object."""
         if req and resp:
             return self._Session(
-                info={'req': req, 'resp': resp}, **self._session_kwargs)
+                info={'req': req, 'resp': resp}, **self._session_kwargs
+            )
 
         return self._Session()
 
@@ -241,6 +248,7 @@ class SessionOptions:
             postpone SQLAlchemy session commit & cleanup after the response has
             finished streaming.
     """
+
     NO_SESSION_METHODS = frozenset(['OPTIONS', 'TRACE'])
     """HTTP methods that by default do not require a DB session."""
 
