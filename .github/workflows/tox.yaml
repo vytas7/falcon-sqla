@@ -88,10 +88,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python-version: 3.12
+          - python-version: "3.12"
             os: ubuntu-latest
             toxenv: postgresql
-          - python-version: pypy3.0
+          - python-version: "pypy3.10"
             os: ubuntu-latest
             toxenv: pypy3_postgresql
 
