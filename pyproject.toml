@@ -1,0 +1,99 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61"]
+
+[project]
+name = "falcon-sqla"
+description = "Middleware for integrating Falcon applications with SQLAlchemy."
+dynamic = ["version"]
+readme = "README.rst"
+requires-python = ">=3.8"
+authors = [
+  {name = "Vytautas Liuolia", email = "vytautas.liuolia@gmail.com" }
+]
+license = {text = "Apache 2.0"}
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Web Environment",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Natural Language :: English",
+  "Operating System :: OS Independent",
+  "Topic :: Database :: Front-Ends",
+  "Topic :: Software Development :: Libraries :: Application Frameworks",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+keywords = [
+  "falcon",
+  "wsgi",
+  "database",
+  "middleware",
+  "orm",
+  "sqlalchemy",
+]
+dependencies = [
+  "falcon >= 3.0.0",
+  "SQLAlchemy >= 2.0.0",
+]
+
+[project.optional-dependencies]
+docs = [
+    "Sphinx",
+    "sphinx-rtd-theme",
+]
+test = [
+  "pytest",
+  "pytest-cov",
+]
+
+[project.urls]
+Homepage = "https://github.com/vytas7/falcon-sqla"
+Documentation = "https://falcon-sqla.readthedocs.io/"
+Source = "https://github.com/vytas7/falcon-sqla"
+Funding = "https://opencollective.com/falcon"
+Chat = "https://gitter.im/falconry/user"
+
+[tool.setuptools]
+license-files = ["LICENSE"]
+
+[tool.setuptools.dynamic]
+version = {attr = "falcon_sqla.version.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["falcon_sqla*"]
+
+[tool.ruff]
+target-version = "py38"
+format.quote-style = "single"
+line-length = 79
+
+[tool.ruff.lint]
+select = [
+  "C9",
+  "E",
+  "F",
+  "W",
+  "I",
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.ruff.lint.isort]
+case-sensitive = false
+force-single-line = true
+order-by-type = false
+single-line-exclusions = [
+  "typing",
+]
+force-sort-within-sections = true
