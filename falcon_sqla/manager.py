@@ -17,12 +17,13 @@ import random
 import uuid
 
 from sqlalchemy.orm.session import sessionmaker
-from sqlalchemy.sql import Update, Delete
+from sqlalchemy.sql import Delete
+from sqlalchemy.sql import Update
 
-from .constants import EngineRole, SessionCleanup
+from .constants import EngineRole
+from .constants import SessionCleanup
 from .middleware import Middleware
 from .session import RequestSession
-
 
 __all__ = ['Manager', 'SessionOptions']
 

@@ -11,7 +11,6 @@ import datetime
 
 import falcon_sqla
 
-
 now = datetime.datetime.utcnow()
 
 project = 'falcon-sqla'

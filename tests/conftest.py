@@ -10,7 +10,11 @@ except ImportError:
     pass
 
 import falcon
-from sqlalchemy import Column, Integer, String, ForeignKey, create_engine
+from sqlalchemy import Column
+from sqlalchemy import create_engine
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
 from sqlalchemy.orm import relationship
 
 try:
