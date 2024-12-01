@@ -1,7 +1,8 @@
 import pytest
 from sqlalchemy import create_engine
 
-from falcon_sqla import Manager, EngineRole
+from falcon_sqla import EngineRole
+from falcon_sqla import Manager
 
 
 def test_unsupported_role():

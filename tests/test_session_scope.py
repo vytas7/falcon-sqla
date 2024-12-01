@@ -4,8 +4,8 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.session import Session
 
-from falcon_sqla.manager import SessionCleanup
 from falcon_sqla.manager import Manager
+from falcon_sqla.manager import SessionCleanup
 from falcon_sqla.session import RequestSession
 
 

@@ -10,22 +10,19 @@ except ImportError:
     pass
 
 import falcon
-from sqlalchemy import Column, Integer, String, ForeignKey, create_engine
-from sqlalchemy.orm import relationship
-
-try:
-    from sqlalchemy.orm import declarative_base
-except ImportError:
-    from sqlalchemy.ext.declarative import declarative_base
-
 import pytest
+from sqlalchemy import Column
+from sqlalchemy import create_engine
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import relationship
 
 
 @pytest.fixture
 def create_app():
-    if hasattr(falcon, 'App'):
-        return falcon.App
-    return falcon.API
+    return falcon.App
 
 
 @pytest.fixture
