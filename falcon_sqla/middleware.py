@@ -12,9 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import functools
+from typing import Optional, TYPE_CHECKING
 
 from .util import ClosingStreamWrapper
+
+if TYPE_CHECKING:
+    from falcon import Request
+    from falcon import Response
+
+    from .manager import Manager
 
 
 class Middleware:
@@ -24,11 +33,11 @@ class Middleware:
         manager (Manager): Manager instance to use in this middleware.
     """
 
-    def __init__(self, manager):
+    def __init__(self, manager: Manager) -> None:
         self._manager = manager
         self._options = manager.session_options
 
-    def process_request(self, req, resp):
+    def process_request(self, req: Request, resp: Response) -> None:
         """
         Set up a SQLAlchemy session for this request.
 
@@ -48,7 +57,13 @@ class Middleware:
         else:
             req.context.session = None
 
-    def process_response(self, req, resp, resource, req_succeeded):
+    def process_response(
+        self,
+        req: Request,
+        resp: Response,
+        resource: Optional[object],
+        req_succeeded: bool,
+    ) -> None:
         """
         Clean up the session, if one was provided.
 
