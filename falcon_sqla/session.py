@@ -12,6 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
+from typing import Any, Callable, Optional, Union
+
+from sqlalchemy import Connection
+from sqlalchemy import Engine
 import sqlalchemy.orm
 
 
@@ -23,11 +29,18 @@ class RequestSession(sqlalchemy.orm.Session):
     ``info`` context as ``'req'`` and ``'resp'`` keys, respectively.
     """
 
-    def __init__(self, *args, **kwargs):
-        self._manager_get_bind = kwargs.pop('_manager_get_bind', None)
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self._manager_get_bind: Optional[
+            Callable[..., Union[Engine, Connection]]
+        ] = kwargs.pop('_manager_get_bind', None)
         super().__init__(*args, **kwargs)
 
-    def get_bind(self, mapper=None, clause=None):
+    def get_bind(
+        self,
+        mapper: Any = None,
+        clause: Any = None,
+        **kw: Any,
+    ) -> Union[Engine, Connection]:
         """
         Use the manager to get the appropriate bind when ``_manager_get_bind``
         is defined. Otherwise, the default logic is used.
@@ -38,4 +51,4 @@ class RequestSession(sqlalchemy.orm.Session):
             return self._manager_get_bind(
                 session=self, mapper=mapper, clause=clause, **self.info
             )
-        return super().get_bind(mapper=mapper, clause=clause)
+        return super().get_bind(mapper=mapper, clause=clause, **kw)

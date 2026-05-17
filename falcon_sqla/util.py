@@ -12,6 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
+from collections.abc import Iterable
+from collections.abc import Iterator
+from typing import Callable, cast, Union
+
+from falcon.typing import ReadableIO
+
 
 class ClosingStreamWrapper:
     """Iterator that wraps a WSGI response iterable with support for close().
@@ -28,7 +36,11 @@ class ClosingStreamWrapper:
             is closed.
     """
 
-    def __init__(self, stream, close):
+    def __init__(
+        self,
+        stream: Union[ReadableIO, Iterable[bytes]],
+        close: Callable[[], None],
+    ) -> None:
         self._stream = stream
         self._close = close
 
@@ -36,10 +48,10 @@ class ClosingStreamWrapper:
         if read:
             self.read = read
 
-    def __iter__(self):
-        return self._stream
+    def __iter__(self) -> Iterator[bytes]:
+        return cast('Iterator[bytes]', self._stream)
 
-    def close(self):
+    def close(self) -> None:
         try:
             self._close()
         finally:

@@ -12,10 +12,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
+from collections.abc import Hashable
+from collections.abc import Iterator
 import contextlib
 import random
+from typing import Any, Callable, Optional, Union
 import uuid
 
+from falcon import Request
+from falcon import Response
+from sqlalchemy import Engine
+from sqlalchemy.orm import Session
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.sql import Delete
 from sqlalchemy.sql import Update
@@ -52,12 +61,19 @@ class Manager:
             Defaults to ``None``.
     """
 
-    def __init__(self, engine, session_cls=RequestSession, binds=None):
+    def __init__(
+        self,
+        engine: Engine,
+        session_cls: type[Session] = RequestSession,
+        binds: Optional[dict[Any, Any]] = None,
+    ) -> None:
         self._main_engine = engine
-        self._engines = {engine: EngineRole.READ_WRITE}
-        self._read_engines = (engine,)
-        self._write_engines = (engine,)
-        self._session_kwargs = {}
+        self._engines: dict[Engine, EngineRole] = {
+            engine: EngineRole.READ_WRITE
+        }
+        self._read_engines: tuple[Engine, ...] = (engine,)
+        self._write_engines: tuple[Engine, ...] = (engine,)
+        self._session_kwargs: dict[str, Any] = {}
 
         self._binds = binds
         self._session_cls = session_cls
@@ -67,7 +83,9 @@ class Manager:
 
         self.session_options = SessionOptions()
 
-    def _filter_by_role(self, engines, role):
+    def _filter_by_role(
+        self, engines: tuple[Engine, ...], role: EngineRole
+    ) -> tuple[Engine, ...]:
         """Returns all the ``engines`` whose role is exactly ``role``.
 
         NOTE: if no engine with a role is found, all the engine are returned.
@@ -77,7 +95,9 @@ class Manager:
         )
         return filtered or engines
 
-    def add_engine(self, engine, role=EngineRole.READ):
+    def add_engine(
+        self, engine: Engine, role: Union[EngineRole, str] = EngineRole.READ
+    ) -> None:
         """Adds a new engine with the specified role.
 
         Args:
@@ -115,7 +135,14 @@ class Manager:
         if not self._binds and issubclass(self._session_cls, RequestSession):
             self._session_kwargs = {'_manager_get_bind': self.get_bind}
 
-    def get_bind(self, req, resp, session, mapper, clause):
+    def get_bind(
+        self,
+        req: Request,
+        resp: Response,
+        session: Session,
+        mapper: Any,
+        clause: Any,
+    ) -> Engine:
         """Choose the appropriate bind for the given request session.
 
         This method is not used directly, it's called by the session instance
@@ -135,7 +162,9 @@ class Manager:
 
         return random.choice(engines)
 
-    def get_session(self, req=None, resp=None):
+    def get_session(
+        self, req: Optional[Request] = None, resp: Optional[Response] = None
+    ) -> Session:
         """Returns a new session object."""
         if req and resp:
             return self._Session(
@@ -144,7 +173,13 @@ class Manager:
 
         return self._Session()
 
-    def close_session(self, session, succeeded, req=None, resp=None):
+    def close_session(
+        self,
+        session: Session,
+        succeeded: bool,
+        req: Optional[Request] = None,
+        resp: Optional[Response] = None,
+    ) -> None:
         """Close a session obtained via :func:`get_session`.
 
         .. note:: There is no need to invoke this method manually if you are
@@ -172,17 +207,19 @@ class Manager:
             session.close()
 
     @property
-    def read_engines(self):
+    def read_engines(self) -> tuple[Engine, ...]:
         """A tuple of read capable engines."""
         return self._read_engines
 
     @property
-    def write_engines(self):
+    def write_engines(self) -> tuple[Engine, ...]:
         """A tuple of write capable engines."""
         return self._write_engines
 
     @contextlib.contextmanager
-    def session_scope(self, req=None, resp=None):
+    def session_scope(
+        self, req: Optional[Request] = None, resp: Optional[Response] = None
+    ) -> Iterator[Session]:
         """Provide a transactional scope around a series of operations.
 
         The session is obtained via :func:`get_sesion`, and finalized using
@@ -203,7 +240,7 @@ class Manager:
             self.close_session(session, succeeded, req, resp)
 
     @property
-    def middleware(self):
+    def middleware(self) -> Middleware:
         """Create a new :class:`~falcon_sqla.middleware.Middleware` instance
         connected to this manager.
         """
@@ -271,7 +308,17 @@ class SessionOptions:
         'wrap_response_stream',
     ]
 
-    def __init__(self):
+    session_cleanup: SessionCleanup
+    no_session_methods: frozenset[str]
+    safe_methods: frozenset[str]
+    read_from_rw_engines: bool
+    write_to_rw_engines: bool
+    write_engine_if_flushing: bool
+    sticky_binds: bool
+    request_id_func: Callable[[], Hashable]
+    wrap_response_stream: bool
+
+    def __init__(self) -> None:
         self.session_cleanup = SessionCleanup.COMMIT_ON_SUCCESS
 
         self.no_session_methods = self.NO_SESSION_METHODS
