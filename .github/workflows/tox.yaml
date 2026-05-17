@@ -25,9 +25,6 @@ jobs:
           - "docs"
           - "twine_check"
         include:
-          - python-version: "3.8"
-            os: ubuntu-latest
-            toxenv: py38
           - python-version: "3.9"
             os: ubuntu-latest
             toxenv: py39
@@ -75,7 +72,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
-        if: ${{ matrix.toxenv == 'py38' && matrix.os == 'ubuntu-20.04' }}
+        if: ${{ matrix.toxenv == 'py312' && matrix.os == 'ubuntu-latest' }}
         with:
           env_vars: PYTHON
           fail_ci_if_error: true
