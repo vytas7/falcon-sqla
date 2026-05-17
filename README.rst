@@ -108,8 +108,8 @@ Object Relational Mapper that gives application developers the full power and
 flexibility of SQL.
 
 
-.. |Build Status| image:: https://github.com/vytas7/falcon-sqla/workflows/tox/badge.svg
-   :target: https://github.com/vytas7/falcon-sqla/actions?query=workflow%3A%22tox%22
+.. |Build Status| image:: https://github.com/vytas7/falcon-sqla/actions/workflows/tox.yaml/badge.svg
+   :target: https://github.com/vytas7/falcon-sqla/actions/workflows/tox.yaml
 
 .. |PyPi| image:: https://img.shields.io/pypi/v/falcon-sqla.svg
    :target: https://pypi.python.org/pypi/falcon-sqla

@@ -3,7 +3,7 @@
 Installation
 ============
 
-PyPi
+PyPI
 ----
 
 To obtain the stable version, simply install the

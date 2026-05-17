@@ -1,4 +1,4 @@
-#  Copyright 2020-2023 Vytautas Liuolia
+#  Copyright 2020-2025 Vytautas Liuolia
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ class Manager:
             class. Defaults to :class:`~falcon_sqla.session.RequestSession`.
         binds (dict, optional): A dictionary that allows specifying custom
             binds on a per-entity basis in the session. See also
-            https://docs.sqlalchemy.org/en/13/orm/session_api.html#sqlalchemy.orm.session.Session.params.binds.
+            https://docs.sqlalchemy.org/en/20/orm/session_api.html#sqlalchemy.orm.Session.params.binds.
             Defaults to ``None``.
     """
 
