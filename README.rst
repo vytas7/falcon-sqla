@@ -10,6 +10,14 @@ more complex use cases, such as applications leveraging multiple database
 binds.
 
 
+Quick Links
+-----------
+
+* `Documentation <https://falcon-sqla.readthedocs.io/>`_
+* `GitHub repository <https://github.com/vytas7/falcon-sqla>`_
+* `PyPI project page <https://pypi.org/project/falcon-sqla/>`_
+
+
 Installation
 ------------
 

@@ -1,37 +1,16 @@
 #!/usr/bin/env python3
-"""Solar System: a small ``falcon-sqla`` example.
-
-A read/write REST API over an SQLite database of celestial bodies in the
-Solar System, wired up using the :class:`falcon_sqla.Manager` middleware.
-
-On the first run the SQLite database is created from the declarative base
-and populated from ``solar_system.json`` next to this file. Sedna, Eris,
-and Eris's satellite Dysnomia are intentionally absent from the seed data
-and are added using the :meth:`~falcon_sqla.Manager.session_scope` API
-instead, to illustrate how to use the manager outside of the
-request-response cycle.
-
-Planets and dwarf planets share a single ``planets`` table at the schema
-level (distinguished by a polymorphic discriminator), which lets
-``satellites.primary`` be a single foreign key targeting either kind.
-
-Run directly to launch a local development server::
-
-    $ python solar_sync.py
-    Database:  .../examples/solar_system.sqlite
-    Serving on http://127.0.0.1:8000 (Ctrl+C to stop)
-
-    $ curl http://127.0.0.1:8000/planets
-"""
 
 from __future__ import annotations
 
 import json
 import pathlib
+import sys
 from typing import Any
-from wsgiref.simple_server import make_server
+import wsgiref.simple_server
 
 import falcon
+from falcon import Request
+from falcon import Response
 from sqlalchemy import create_engine
 from sqlalchemy import Engine
 from sqlalchemy import event
@@ -46,12 +25,13 @@ from sqlalchemy.orm import relationship
 import falcon_sqla
 
 HERE = pathlib.Path(__file__).resolve().parent
-DATABASE_PATH = HERE / 'solar_system.sqlite'
 DATA_PATH = HERE / 'solar_system.json'
+DATABASE_PATH = HERE / 'solar_system.sqlite'
+DATABASE_URL = f'sqlite:///{DATABASE_PATH}'
 
 
 class Base(MappedAsDataclass, DeclarativeBase, kw_only=True):
-    """Declarative base."""
+    pass
 
 
 class CelestialBody(Base):
@@ -61,8 +41,7 @@ class CelestialBody(Base):
 
     mass: Mapped[float]
     radius: Mapped[float]
-    distance: Mapped[float | None]
-    """To be precise, this is the semi-major axis."""
+    distance: Mapped[float | None]  # to be precise, it is semi-major axis
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -78,17 +57,9 @@ class Star(CelestialBody):
 
 
 class PlanetaryBody(CelestialBody):
-    """Shared table for planets and dwarf planets.
-
-    The two are stored in a single ``planets`` table, distinguished by the
-    ``kind`` discriminator column, so that satellites can reference either
-    via a single foreign key.
-    """
-
     __tablename__ = 'planets'
 
     kind: Mapped[str] = mapped_column(init=False)
-
     satellites: Mapped[list['Satellite']] = relationship(
         order_by='Satellite.distance',
         init=False,
@@ -124,11 +95,9 @@ class Satellite(CelestialBody):
         return {**super().to_dict(), 'primary': self.primary.title()}
 
 
-KINDS: dict[str, type[CelestialBody]] = {
-    'stars': Star,
-    'planets': Planet,
-    'dwarf_planets': DwarfPlanet,
-    'satellites': Satellite,
+_KINDS = {
+    f'{model.__name__.lower()}s': model
+    for model in (Star, Planet, DwarfPlanet, Satellite)
 }
 
 
@@ -145,17 +114,19 @@ class BodyResource:
             for body in req.context.session.execute(stmt).scalars()
         ]
 
-    def on_get(
-        self, req: falcon.Request, resp: falcon.Response, name: str
-    ) -> None:
+    def on_get(self, req: Request, resp: Response, name: str) -> None:
         body = req.context.session.get(self._model, name.lower())
         if body is None:
             raise falcon.HTTPNotFound()
         resp.media = body.to_dict()
 
-    def on_put(
-        self, req: falcon.Request, resp: falcon.Response, name: str
-    ) -> None:
+    def on_put(self, req: Request, resp: Response, name: str) -> None:
+        if self._model is Star:
+            raise falcon.HTTPError(
+                falcon.HTTP_799,
+                description='You cannot change the Sun, or add stars!',
+            )
+
         name = name.lower()
         media = req.get_media()
         media.pop('name', None)
@@ -175,75 +146,50 @@ class BodyResource:
         resp.media = body.to_dict()
 
 
-def _seed(engine: Engine, manager: falcon_sqla.Manager) -> None:
-    Base.metadata.create_all(engine)
+def init_engine(url: str, fresh: bool = False) -> Engine:
+    engine = create_engine(url)
 
-    with manager.session_scope() as session:
-        data = json.loads(DATA_PATH.read_text(encoding='utf-8'))
-        for kind, items in data.items():
-            for item in items:
-                item = {**item, 'name': item['name'].lower()}
-                if 'primary' in item:
-                    item['primary'] = item['primary'].lower()
-                session.add(KINDS[kind](**item))
+    @event.listens_for(engine, 'connect')
+    def _sqlite_enable_foreign_keys(dbapi_connection, _) -> None:
+        cursor = dbapi_connection.cursor()
+        cursor.execute('PRAGMA foreign_keys = ON')
+        cursor.close()
 
-    # Sedna, Eris and Eris's moon Dysnomia are deliberately left out of
-    # solar_system.json to demonstrate how to add records via the manager's
-    # session_scope() context manager, e.g. from a one-off script or a CLI
-    # subcommand.
-    with manager.session_scope() as session:
-        session.add(
-            DwarfPlanet(
-                name='sedna',
-                mass=1.0e21,
-                radius=500.0,
-                distance=7.57e10,
-            )
-        )
-        session.add(
-            DwarfPlanet(
-                name='eris',
-                mass=1.6466e22,
-                radius=1163.0,
-                distance=1.01237e10,
-            )
-        )
-        session.add(
-            Satellite(
-                name='dysnomia',
-                mass=8.2e19,
-                radius=350.0,
-                distance=37273.0,
-                primary='eris',
-            )
-        )
+    if fresh:
+        print(f'Initializing new database: {engine.url}')
+        Base.metadata.create_all(engine)
+
+        # Seed with data from solar_system.json
+        with falcon_sqla.Manager(engine).session_scope() as session:
+            data = json.loads(DATA_PATH.read_text())
+            for kind, items in data.items():
+                for item in items:
+                    item = {**item, 'name': item['name'].lower()}
+                    if 'primary' in item:
+                        item['primary'] = item['primary'].lower()
+                    session.add(_KINDS[kind](**item))
+    else:
+        print(f'Using existing database: {engine.url}')
+
+    return engine
 
 
-fresh = not DATABASE_PATH.exists()
-engine = create_engine(f'sqlite:///{DATABASE_PATH}')
+def create_app(manager: falcon_sqla.Manager) -> falcon.App[Request, Response]:
+    app = falcon.App(middleware=[manager.middleware])
+    for kind, model in _KINDS.items():
+        resource = BodyResource(model)
+        app.add_route(f'/{kind}', resource, suffix='collection')
+        app.add_route(f'/{kind}/{{name}}', resource)
 
-
-@event.listens_for(engine, 'connect')
-def _sqlite_enable_foreign_keys(dbapi_connection, _) -> None:
-    cursor = dbapi_connection.cursor()
-    cursor.execute('PRAGMA foreign_keys = ON')
-    cursor.close()
-
-
-manager = falcon_sqla.Manager(engine)
-
-if fresh:
-    _seed(engine, manager)
-
-app = falcon.App(middleware=[manager.middleware])
-for _kind, _model in KINDS.items():
-    _resource = BodyResource(_model)
-    app.add_route(f'/{_kind}', _resource, suffix='collection')
-    app.add_route(f'/{_kind}/{{name}}', _resource)
+    return app
 
 
 if __name__ == '__main__':
-    print(f'Database:  {DATABASE_PATH}')
-    print('Serving on http://127.0.0.1:8000 (Ctrl+C to stop)')
-    with make_server('127.0.0.1', 8000, app) as httpd:
-        httpd.serve_forever()
+    engine = init_engine(DATABASE_URL, not DATABASE_PATH.exists())
+    manager = falcon_sqla.Manager(engine)
+    app = create_app(manager)
+
+    if '--skip-server' not in sys.argv:
+        with wsgiref.simple_server.make_server('127.0.0.1', 8000, app) as srv:
+            print('Serving on http://127.0.0.1:8000... (Ctrl+C to stop)')
+            srv.serve_forever()

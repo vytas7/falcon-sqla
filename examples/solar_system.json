@@ -27,7 +27,7 @@
         {"name": "Oberon",    "mass": 3.076e21,   "radius": 761.4,  "distance": 583520.0,  "primary": "Uranus"},
         {"name": "Triton",    "mass": 2.139e22,   "radius": 1353.4, "distance": 354759.0,  "primary": "Neptune"}
     ],
-    "dwarf_planets": [
+    "dwarfplanets": [
         {"name": "Ceres",    "mass": 9.3835e20, "radius": 469.7,  "distance": 4.1402e8},
         {"name": "Pluto",    "mass": 1.303e22,  "radius": 1188.3, "distance": 5.9064e9},
         {"name": "Haumea",   "mass": 4.006e21,  "radius": 780.0,  "distance": 6.4524e9},
