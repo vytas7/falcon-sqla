@@ -16,12 +16,14 @@ from sqlalchemy import Engine
 from sqlalchemy import event
 from sqlalchemy import ForeignKey
 from sqlalchemy import select
+from sqlalchemy.engine.interfaces import DBAPIConnection
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import MappedAsDataclass
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Session
+from sqlalchemy.pool import ConnectionPoolEntry
 
 import falcon_sqla
 
@@ -151,7 +153,9 @@ def init_engine(url: str, fresh: bool = False) -> Engine:
     engine = create_engine(url)
 
     @event.listens_for(engine, 'connect')
-    def _sqlite_enable_foreign_keys(dbapi_connection, _) -> None:
+    def _sqlite_enable_foreign_keys(
+        dbapi_connection: DBAPIConnection, _: ConnectionPoolEntry
+    ) -> None:
         cursor = dbapi_connection.cursor()
         cursor.execute('PRAGMA foreign_keys = ON')
         cursor.close()
