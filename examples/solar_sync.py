@@ -5,15 +5,20 @@ A read/write REST API over an SQLite database of celestial bodies in the
 Solar System, wired up using the :class:`falcon_sqla.Manager` middleware.
 
 On the first run the SQLite database is created from the declarative base
-and populated from ``solar_system.json`` next to this file. Sedna and its
-satellite are intentionally absent from the seed data and are added using
-the :meth:`~falcon_sqla.Manager.session_scope` API instead, to illustrate
-how to use the manager outside of the request-response cycle.
+and populated from ``solar_system.json`` next to this file. Sedna, Eris,
+and Eris's satellite Dysnomia are intentionally absent from the seed data
+and are added using the :meth:`~falcon_sqla.Manager.session_scope` API
+instead, to illustrate how to use the manager outside of the
+request-response cycle.
+
+Planets and dwarf planets share a single ``planets`` table at the schema
+level (distinguished by a polymorphic discriminator), which lets
+``satellites.primary`` be a single foreign key targeting either kind.
 
 Run directly to launch a local development server::
 
     $ python solar_sync.py
-    Database:  .../example/solar_system.sqlite
+    Database:  .../examples/solar_system.sqlite
     Serving on http://127.0.0.1:8000 (Ctrl+C to stop)
 
     $ curl http://127.0.0.1:8000/planets
@@ -29,11 +34,14 @@ from wsgiref.simple_server import make_server
 import falcon
 from sqlalchemy import create_engine
 from sqlalchemy import Engine
+from sqlalchemy import event
+from sqlalchemy import ForeignKey
 from sqlalchemy import select
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import MappedAsDataclass
+from sqlalchemy.orm import relationship
 
 import falcon_sqla
 
@@ -69,18 +77,48 @@ class Star(CelestialBody):
     __tablename__ = 'stars'
 
 
-class Planet(CelestialBody):
+class PlanetaryBody(CelestialBody):
+    """Shared table for planets and dwarf planets.
+
+    The two are stored in a single ``planets`` table, distinguished by the
+    ``kind`` discriminator column, so that satellites can reference either
+    via a single foreign key.
+    """
+
     __tablename__ = 'planets'
 
+    kind: Mapped[str] = mapped_column(init=False)
 
-class DwarfPlanet(CelestialBody):
-    __tablename__ = 'dwarf_planets'
+    satellites: Mapped[list['Satellite']] = relationship(
+        order_by='Satellite.distance',
+        init=False,
+        default_factory=list,
+    )
+
+    __mapper_args__ = {
+        'polymorphic_on': 'kind',
+        'polymorphic_abstract': True,
+    }
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            **super().to_dict(),
+            'satellites': [s.name.title() for s in self.satellites],
+        }
+
+
+class Planet(PlanetaryBody):
+    __mapper_args__ = {'polymorphic_identity': 'planet'}
+
+
+class DwarfPlanet(PlanetaryBody):
+    __mapper_args__ = {'polymorphic_identity': 'dwarf_planet'}
 
 
 class Satellite(CelestialBody):
     __tablename__ = 'satellites'
 
-    primary: Mapped[str]
+    primary: Mapped[str] = mapped_column(ForeignKey('planets.name'))
 
     def to_dict(self) -> dict[str, Any]:
         return {**super().to_dict(), 'primary': self.primary.title()}
@@ -183,6 +221,15 @@ def _seed(engine: Engine, manager: falcon_sqla.Manager) -> None:
 
 fresh = not DATABASE_PATH.exists()
 engine = create_engine(f'sqlite:///{DATABASE_PATH}')
+
+
+@event.listens_for(engine, 'connect')
+def _sqlite_enable_foreign_keys(dbapi_connection, _) -> None:
+    cursor = dbapi_connection.cursor()
+    cursor.execute('PRAGMA foreign_keys = ON')
+    cursor.close()
+
+
 manager = falcon_sqla.Manager(engine)
 
 if fresh:
