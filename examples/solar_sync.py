@@ -21,6 +21,7 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import MappedAsDataclass
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Session
 
 import falcon_sqla
 
@@ -160,7 +161,7 @@ def init_engine(url: str, fresh: bool = False) -> Engine:
         Base.metadata.create_all(engine)
 
         # Seed with data from solar_system.json
-        with falcon_sqla.Manager(engine).session_scope() as session:
+        with Session(engine) as session:
             data = json.loads(DATA_PATH.read_text())
             for kind, items in data.items():
                 for item in items:
@@ -168,6 +169,7 @@ def init_engine(url: str, fresh: bool = False) -> Engine:
                     if 'primary' in item:
                         item['primary'] = item['primary'].lower()
                     session.add(_KINDS[kind](**item))
+            session.commit()
     else:
         print(f'Using existing database: {engine.url}')
 

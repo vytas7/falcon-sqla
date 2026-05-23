@@ -33,6 +33,11 @@ Perform an API request::
 
     $ curl http://localhost:8000/stars
 
+Each collection is exposed under a URL slug derived from its model class name
+lower-cased with a trailing ``s``; ``DwarfPlanet`` is therefore reached at
+``/dwarfplanets`` (no underscore), alongside ``/stars``, ``/planets`` and
+``/satellites``.
+
 The astute reader will notice that minor dwarf planets and lesser known
 satellites are missing from the responses.
 
@@ -49,7 +54,11 @@ manager to add records; for instance, let's add
 ...         name='eris', mass=1.6466e22, radius=1163.0, distance=1.01237e10))
 ...
 
-Let's run the server again. We can also add celestial bodies via the API; we'll
+Let's run the server again. The SQLite file lives next to the script and
+persists across runs, so Eris is still in the database from the previous
+step.
+
+We can also add celestial bodies via the API; we'll
 use the popular Python ``requests`` client. Open a separate interpreter in
 parallel to the API:
 
