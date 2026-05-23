@@ -1,0 +1,37 @@
+{
+    "stars": [
+        {"name": "Sun", "mass": 1.989e30, "radius": 696340.0, "distance": null}
+    ],
+    "planets": [
+        {"name": "Mercury", "mass": 3.3011e23, "radius": 2439.7,  "distance": 5.7909e7},
+        {"name": "Venus",   "mass": 4.8675e24, "radius": 6051.8,  "distance": 1.0821e8},
+        {"name": "Earth",   "mass": 5.972e24,  "radius": 6371.0,  "distance": 1.496e8},
+        {"name": "Mars",    "mass": 6.4171e23, "radius": 3389.5,  "distance": 2.2794e8},
+        {"name": "Jupiter", "mass": 1.898e27,  "radius": 69911.0, "distance": 7.7857e8},
+        {"name": "Saturn",  "mass": 5.683e26,  "radius": 58232.0, "distance": 1.4335e9},
+        {"name": "Uranus",  "mass": 8.681e25,  "radius": 25362.0, "distance": 2.8725e9},
+        {"name": "Neptune", "mass": 1.024e26,  "radius": 24622.0, "distance": 4.4951e9}
+    ],
+    "satellites": [
+        {"name": "Moon",      "mass": 7.342e22,   "radius": 1737.4, "distance": 384399.0,  "primary": "Earth"},
+        {"name": "Phobos",    "mass": 1.0659e16,  "radius": 11.267, "distance": 9376.0,    "primary": "Mars"},
+        {"name": "Deimos",    "mass": 1.4762e15,  "radius": 6.2,    "distance": 23463.2,   "primary": "Mars"},
+        {"name": "Io",        "mass": 8.9319e22,  "radius": 1821.6, "distance": 421700.0,  "primary": "Jupiter"},
+        {"name": "Europa",    "mass": 4.7998e22,  "radius": 1560.8, "distance": 671034.0,  "primary": "Jupiter"},
+        {"name": "Ganymede",  "mass": 1.4819e23,  "radius": 2634.1, "distance": 1070400.0, "primary": "Jupiter"},
+        {"name": "Callisto",  "mass": 1.0759e23,  "radius": 2410.3, "distance": 1882700.0, "primary": "Jupiter"},
+        {"name": "Enceladus", "mass": 1.08022e20, "radius": 252.1,  "distance": 237948.0,  "primary": "Saturn"},
+        {"name": "Titan",     "mass": 1.3452e23,  "radius": 2574.7, "distance": 1221870.0, "primary": "Saturn"},
+        {"name": "Umbriel",   "mass": 1.275e21,   "radius": 584.7,  "distance": 266000.0,  "primary": "Uranus"},
+        {"name": "Titania",   "mass": 3.4e21,     "radius": 788.4,  "distance": 435910.0,  "primary": "Uranus"},
+        {"name": "Oberon",    "mass": 3.076e21,   "radius": 761.4,  "distance": 583520.0,  "primary": "Uranus"},
+        {"name": "Triton",    "mass": 2.139e22,   "radius": 1353.4, "distance": 354759.0,  "primary": "Neptune"}
+    ],
+    "dwarf_planets": [
+        {"name": "Ceres",    "mass": 9.3835e20, "radius": 469.7,  "distance": 4.1402e8},
+        {"name": "Pluto",    "mass": 1.303e22,  "radius": 1188.3, "distance": 5.9064e9},
+        {"name": "Haumea",   "mass": 4.006e21,  "radius": 780.0,  "distance": 6.4524e9},
+        {"name": "Makemake", "mass": 3.1e21,    "radius": 715.0,  "distance": 6.8503e9},
+        {"name": "Gonggong", "mass": 1.75e21,   "radius": 615.0,  "distance": 1.00139e10}
+    ]
+}
