@@ -45,4 +45,5 @@ More usage scenarios are covered in the :ref:`user-guide`.
 
     install
     user
+    examples
     api/index
