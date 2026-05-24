@@ -331,9 +331,6 @@ class _SessionScope:
     protocols, dispatching to :meth:`Manager.close_session` or
     :meth:`Manager.close_session_async` depending on the form actually
     used (``with`` vs. ``async with``).
-
-    Using the wrong form for the underlying engine raises a
-    :exc:`TypeError` with a hint about the right one.
     """
 
     def __init__(
@@ -355,6 +352,7 @@ class _SessionScope:
                 'use `async with manager.session_scope(...) as session:` '
                 'instead of `with`'
             )
+
         session = self._manager.get_session(self._req, self._resp)
         assert isinstance(session, Session)
         self._sync_session = session
@@ -378,6 +376,7 @@ class _SessionScope:
                 'use `with manager.session_scope(...) as session:` '
                 'instead of `async with`'
             )
+
         session = self._manager.get_session(self._req, self._resp)
         assert isinstance(session, AsyncSession)
         self._async_session = session

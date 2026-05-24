@@ -117,9 +117,7 @@ class BodyResource:
             else []
         )
 
-    async def on_get_collection(
-        self, req: Request, resp: Response
-    ) -> None:
+    async def on_get_collection(self, req: Request, resp: Response) -> None:
         stmt = (
             select(self._model)
             .order_by(self._model.distance)
@@ -128,9 +126,7 @@ class BodyResource:
         result = await req.context.session.execute(stmt)
         resp.media = [body.to_dict() for body in result.scalars()]
 
-    async def on_get(
-        self, req: Request, resp: Response, name: str
-    ) -> None:
+    async def on_get(self, req: Request, resp: Response, name: str) -> None:
         session: AsyncSession = req.context.session
         body = await session.get(
             self._model, name.lower(), options=self._eager
@@ -139,9 +135,7 @@ class BodyResource:
             raise falcon.HTTPNotFound()
         resp.media = body.to_dict()
 
-    async def on_put(
-        self, req: Request, resp: Response, name: str
-    ) -> None:
+    async def on_put(self, req: Request, resp: Response, name: str) -> None:
         if self._model is Star:
             # solar_sync.py uses HTTP_799 for fun, but ASGI servers look
             # up status phrases by the numeric code, so we stick with a
@@ -200,6 +194,10 @@ async def init_engine(url: str, fresh: bool = False) -> AsyncEngine:
     else:
         print(f'Using existing database: {engine.url}')
 
+    # Drop the pool so Uvicorn's event loop opens fresh connections, even in
+    # the case this method is run separately via asyncio.run().
+    await engine.dispose()
+
     return engine
 
 
@@ -218,18 +216,11 @@ def create_app(
 
 
 if __name__ == '__main__':
-
-    async def setup() -> falcon.asgi.App[Request, Response]:
-        engine = await init_engine(DATABASE_URL, not DATABASE_PATH.exists())
-        # Drop the pool so uvicorn's event loop opens fresh connections,
-        # rather than inheriting any from the loop asyncio.run() just closed.
-        await engine.dispose()
-        return create_app(falcon_sqla.Manager(engine))
-
-    app = asyncio.run(setup())
+    engine = asyncio.run(init_engine(DATABASE_URL, not DATABASE_PATH.exists()))
+    manager = falcon_sqla.Manager(engine)
+    app = create_app(manager)
 
     if '--skip-server' not in sys.argv:
         import uvicorn
 
-        print('Serving on http://127.0.0.1:8000... (Ctrl+C to stop)')
         uvicorn.run(app, host='127.0.0.1', port=8000)

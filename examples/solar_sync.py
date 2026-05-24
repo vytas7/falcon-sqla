@@ -112,10 +112,8 @@ class BodyResource:
         self, req: falcon.Request, resp: falcon.Response
     ) -> None:
         stmt = select(self._model).order_by(self._model.distance)
-        resp.media = [
-            body.to_dict()
-            for body in req.context.session.execute(stmt).scalars()
-        ]
+        result = req.context.session.execute(stmt)
+        resp.media = [body.to_dict() for body in result.scalars()]
 
     def on_get(self, req: Request, resp: Response, name: str) -> None:
         body = req.context.session.get(self._model, name.lower())

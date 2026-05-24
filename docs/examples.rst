@@ -81,9 +81,7 @@ same schema and routes through :class:`falcon.asgi.App` on top of an
     :caption: examples/solar_async.py
 
 Running it requires the asynchronous SQLite driver and an ASGI server such as
-``uvicorn``:
-
-.. code:: bash
+``uvicorn``::
 
     $ pip install aiosqlite uvicorn
     $ examples/solar_async.py
@@ -93,16 +91,16 @@ coexist without stepping on each other's data.
 
 A handful of notable differences from the synchronous version:
 
-* the engine is constructed with
-  :func:`~sqlalchemy.ext.asyncio.create_async_engine`, and the
+* The engine is constructed with
+  ``sqlalchemy.ext.asyncio.create_async_engine``, and the
   ``PRAGMA foreign_keys = ON`` listener is attached to ``engine.sync_engine``
-  because SQLAlchemy's ``event`` system is synchronous;
+  because SQLAlchemy's event system is synchronous.
 * :meth:`~falcon_sqla.Manager.session_scope` is used with ``async with``
   rather than ``with`` (mixing the two raises a :exc:`TypeError` with a
-  hint about the right form);
-* async sessions cannot lazy-load relationships, so each query for a
+  hint about the right form).
+* Asynchronous sessions cannot lazy-load relationships, so each query for a
   ``Planet`` or ``DwarfPlanet`` eager-loads ``satellites`` via
-  :func:`~sqlalchemy.orm.selectinload`;
+  ``sqlalchemy.orm.selectinload``.
 * ``HTTP_799`` from the `7XX Toolkit <https://github.com/joho/7XX-rfc>`__
   is unregistered and not supported under ASGI (servers look up status
   phrases by the numeric code), so refusing a write to ``/stars/{name}``
