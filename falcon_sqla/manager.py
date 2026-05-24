@@ -193,7 +193,7 @@ class Manager:
         """Returns a new session object."""
         if req and resp:
             return self._session_maker(  # type: ignore[no-any-return]
-                info={'req': req, 'resp': resp},
+                info={'req': req, 'resp': resp}, **self._session_kwargs
             )
 
         return self._session_maker()  # type: ignore[no-any-return]
