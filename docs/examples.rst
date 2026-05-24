@@ -67,3 +67,43 @@ parallel to the API:
 ...     'http://localhost:8000/satellites/dysnomia',
 ...     json={'mass': 8.2e19, 'radius': 350, 'distance': 37273, 'primary': 'eris'})
 <Response [201]>
+
+
+Solar System (ASGI)
+-------------------
+
+``solar_async.py`` is an asynchronous port of the WSGI example, exposing the
+same schema and routes through :class:`falcon.asgi.App` on top of an
+``AsyncEngine`` backed by ``aiosqlite``.
+
+.. literalinclude:: ../examples/solar_async.py
+    :language: python
+    :caption: examples/solar_async.py
+
+Running it requires the asynchronous SQLite driver and an ASGI server such as
+``uvicorn``:
+
+.. code:: bash
+
+    $ pip install aiosqlite uvicorn
+    $ examples/solar_async.py
+
+The script writes to ``examples/solar_async.sqlite`` so the two examples can
+coexist without stepping on each other's data.
+
+A handful of notable differences from the synchronous version:
+
+* the engine is constructed with
+  :func:`~sqlalchemy.ext.asyncio.create_async_engine`, and the
+  ``PRAGMA foreign_keys = ON`` listener is attached to ``engine.sync_engine``
+  because SQLAlchemy's ``event`` system is synchronous;
+* :meth:`~falcon_sqla.Manager.session_scope` is used with ``async with``
+  rather than ``with`` (mixing the two raises a :exc:`TypeError` with a
+  hint about the right form);
+* async sessions cannot lazy-load relationships, so each query for a
+  ``Planet`` or ``DwarfPlanet`` eager-loads ``satellites`` via
+  :func:`~sqlalchemy.orm.selectinload`;
+* ``HTTP_799`` from the `7XX Toolkit <https://github.com/joho/7XX-rfc>`__
+  is unregistered and not supported under ASGI (servers look up status
+  phrases by the numeric code), so refusing a write to ``/stars/{name}``
+  yields a registered ``422 Unprocessable Entity`` instead.
