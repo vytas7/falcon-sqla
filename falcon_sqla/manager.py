@@ -99,10 +99,6 @@ class Manager:
             )
         else:
             self._is_async = False
-            session_cls = session_cls or RequestSession
-            self._uses_request_session = issubclass(
-                session_cls, RequestSession
-            )
             self._session_maker = sessionmaker(
                 bind=engine, class_=session_cls, binds=binds
             )
