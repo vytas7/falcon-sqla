@@ -15,9 +15,8 @@
 from __future__ import annotations
 
 from collections.abc import Hashable
-from collections.abc import Iterator
-import contextlib
 import random
+from types import TracebackType
 from typing import Any, Callable, Optional, Union
 import uuid
 
@@ -281,34 +280,34 @@ class Manager:
         """A tuple of write capable engines."""
         return self._write_engines
 
-    @contextlib.contextmanager
     def session_scope(
-        self, req: Optional[Request] = None, resp: Optional[Response] = None
-    ) -> Iterator[Session]:
+        self,
+        req: Optional[Request] = None,
+        resp: Optional[Response] = None,
+    ) -> _SessionScope:
         """Provide a transactional scope around a series of operations.
 
-        The session is obtained via :func:`get_sesion`, and finalized using
-        :func:`close_session` upon exiting the context manager.
+        The session is obtained via :func:`get_session`, and finalized using
+        :func:`close_session` (or :func:`close_session_async`, for an async
+        manager) upon exiting the context manager.
+
+        Use as a regular context manager for a sync :class:`Manager`::
+
+            with manager.session_scope() as session:
+                ...
+
+        and as an async context manager for one wrapping an
+        :class:`~sqlalchemy.ext.asyncio.AsyncEngine`::
+
+            async with manager.session_scope() as session:
+                ...
+
+        Mixing the two will raise a :exc:`TypeError`.
 
         Based on the ``session_scope()`` recipe from
         https://docs.sqlalchemy.org/orm/session_basics.html.
         """
-        session = self.get_session(req, resp)
-        succeeded = True
-
-        try:
-            # TODO: Fix the scope to afford async, and fix typing.
-            yield session  # type: ignore[misc]
-        except Exception:
-            succeeded = False
-            raise
-        finally:
-            self.close_session(
-                session,  # type: ignore[arg-type]
-                succeeded,
-                req,
-                resp,
-            )
+        return _SessionScope(self, req, resp)
 
     @property
     def middleware(self) -> Middleware:
@@ -323,6 +322,77 @@ class Manager:
         if self._middleware is None:
             self._middleware = Middleware(self)
         return self._middleware
+
+
+class _SessionScope:
+    """Sync/async context manager returned by :meth:`Manager.session_scope`.
+
+    Implements both the synchronous and the asynchronous context manager
+    protocols, dispatching to :meth:`Manager.close_session` or
+    :meth:`Manager.close_session_async` depending on the form actually
+    used (``with`` vs. ``async with``).
+
+    Using the wrong form for the underlying engine raises a
+    :exc:`TypeError` with a hint about the right one.
+    """
+
+    def __init__(
+        self,
+        manager: Manager,
+        req: Optional[Request] = None,
+        resp: Optional[Response] = None,
+    ) -> None:
+        self._manager = manager
+        self._req = req
+        self._resp = resp
+        self._sync_session: Session | None = None
+        self._async_session: AsyncSession | None = None
+
+    def __enter__(self) -> Session:
+        if self._manager._is_async:
+            raise TypeError(
+                'this Manager wraps an async engine; '
+                'use `async with manager.session_scope(...) as session:` '
+                'instead of `with`'
+            )
+        session = self._manager.get_session(self._req, self._resp)
+        assert isinstance(session, Session)
+        self._sync_session = session
+        return session
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        assert self._sync_session is not None
+        self._manager.close_session(
+            self._sync_session, exc_type is None, self._req, self._resp
+        )
+
+    async def __aenter__(self) -> AsyncSession:
+        if not self._manager._is_async:
+            raise TypeError(
+                'this Manager wraps a synchronous engine; '
+                'use `with manager.session_scope(...) as session:` '
+                'instead of `async with`'
+            )
+        session = self._manager.get_session(self._req, self._resp)
+        assert isinstance(session, AsyncSession)
+        self._async_session = session
+        return session
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        assert self._async_session is not None
+        await self._manager.close_session_async(
+            self._async_session, exc_type is None, self._req, self._resp
+        )
 
 
 class SessionOptions:
