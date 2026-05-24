@@ -22,6 +22,8 @@ from .util import ClosingStreamWrapper
 if TYPE_CHECKING:
     from falcon import Request
     from falcon import Response
+    from falcon.asgi import Request as AsyncRequest
+    from falcon.asgi import Response as AsyncResponse
 
     from .manager import Manager
 
@@ -57,6 +59,11 @@ class Middleware:
         else:
             req.context.session = None
 
+    async def process_request_async(
+        self, req: AsyncRequest, resp: AsyncResponse
+    ) -> None:
+        self.process_request(req, resp)
+
     def process_response(
         self,
         req: Request,
@@ -86,3 +93,34 @@ class Middleware:
                 )
             else:
                 self._manager.close_session(session, req_succeeded, req, resp)
+
+    async def process_response_async(
+        self,
+        req: AsyncRequest,
+        resp: AsyncResponse,
+        resource: Optional[object],
+        req_succeeded: bool,
+    ) -> None:
+        """
+        Clean up the session, if one was provided.
+
+        This response hook finalizes the session by calling the manager's
+        :func:`~falcon_sqla.Manager.close_session_async` method.
+        """
+        session = getattr(req.context, 'session', None)
+
+        if session is not None:
+            if resp.stream is not None:
+                resp.schedule(
+                    functools.partial(
+                        self._manager.close_session_async,
+                        session,
+                        req_succeeded,
+                        req,
+                        resp,
+                    )
+                )
+            else:
+                await self._manager.close_session_async(
+                    session, req_succeeded, req, resp
+                )

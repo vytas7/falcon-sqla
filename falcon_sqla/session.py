@@ -18,6 +18,7 @@ from typing import Any, Callable, Optional, Union
 
 from sqlalchemy import Connection
 from sqlalchemy import Engine
+import sqlalchemy.ext.asyncio
 import sqlalchemy.orm
 
 

@@ -24,6 +24,9 @@ import uuid
 from falcon import Request
 from falcon import Response
 from sqlalchemy import Engine
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.sql import Delete
@@ -52,43 +55,66 @@ class Manager:
         engine (Engine): An instance of a SQLAlchemy Engine, usually obtained
             with its ``create_engine`` function. This engine is added as
             read-write.
-        session_cls (type, optional): Session class used by this engine to
+        session_cls (type): Synchronous session class used by this engine to
             create the session. Should be a subclass of SQLAlchemy ``Session``
-            class. Defaults to :class:`~falcon_sqla.session.RequestSession`.
+            class. Defaults to :class:`~falcon_sqla.session.RequestSession` for
+            synchronous engines.
+        async_session_cls (type): Asynchronous session class used in the case
+            the engine is asynchronous; ignored otherwise.
+            Defaults to the vanilla ``AsyncSession``.
         binds (dict, optional): A dictionary that allows specifying custom
             binds on a per-entity basis in the session. See also
             https://docs.sqlalchemy.org/en/20/orm/session_api.html#sqlalchemy.orm.Session.params.binds.
             Defaults to ``None``.
     """
 
+    _session_maker: sessionmaker[Any] | async_sessionmaker[Any]
+
     def __init__(
         self,
-        engine: Engine,
+        engine: Engine | AsyncEngine,
         session_cls: type[Session] = RequestSession,
+        async_session_cls: type[AsyncSession] = AsyncSession,
         binds: Optional[dict[Any, Any]] = None,
     ) -> None:
         self._main_engine = engine
-        self._engines: dict[Engine, EngineRole] = {
+        self._binds = binds
+        self._engines: dict[Engine | AsyncEngine, EngineRole] = {
             engine: EngineRole.READ_WRITE
         }
-        self._read_engines: tuple[Engine, ...] = (engine,)
-        self._write_engines: tuple[Engine, ...] = (engine,)
+        self._read_engines: tuple[Engine | AsyncEngine, ...] = (engine,)
+        self._write_engines: tuple[Engine | AsyncEngine, ...] = (engine,)
         self._session_kwargs: dict[str, Any] = {}
 
-        self._binds = binds
-        self._session_cls = session_cls
-        self._Session = sessionmaker(
-            bind=engine, class_=session_cls, binds=binds
-        )
+        self._uses_request_session = issubclass(session_cls, RequestSession)
+
+        if isinstance(engine, AsyncEngine):
+            self._is_async: bool = True
+            self._session_maker = async_sessionmaker(
+                bind=engine,
+                class_=async_session_cls,
+                sync_session_class=session_cls,
+                binds=binds,
+            )
+        else:
+            self._is_async = False
+            session_cls = session_cls or RequestSession
+            self._uses_request_session = issubclass(
+                session_cls, RequestSession
+            )
+            self._session_maker = sessionmaker(
+                bind=engine, class_=session_cls, binds=binds
+            )
 
         self.session_options = SessionOptions()
 
     def _filter_by_role(
-        self, engines: tuple[Engine, ...], role: EngineRole
-    ) -> tuple[Engine, ...]:
+        self, engines: tuple[Engine | AsyncEngine, ...], role: EngineRole
+    ) -> tuple[Engine | AsyncEngine, ...]:
         """Returns all the ``engines`` whose role is exactly ``role``.
 
-        NOTE: if no engine with a role is found, all the engine are returned.
+        .. note::
+            If no engine with a role is found, all the engines are returned.
         """
         filtered = tuple(
             engine for engine in engines if self._engines.get(engine) == role
@@ -96,9 +122,11 @@ class Manager:
         return filtered or engines
 
     def add_engine(
-        self, engine: Engine, role: Union[EngineRole, str] = EngineRole.READ
+        self,
+        engine: Engine | AsyncEngine,
+        role: Union[EngineRole, str] = EngineRole.READ,
     ) -> None:
-        """Adds a new engine with the specified role.
+        """Add a new engine with the specified role.
 
         Args:
             engine (Engine): An instance of a SQLAlchemy Engine.
@@ -132,7 +160,7 @@ class Manager:
         # NOTE(vytas): Do not tamper with custom binds.
         # NOTE(vytas): We can only rely on RequestSession and its subclasses to
         #   implement the private _manager_get_bind constructor kwarg.
-        if not self._binds and issubclass(self._session_cls, RequestSession):
+        if not self._binds and self._uses_request_session:
             self._session_kwargs = {'_manager_get_bind': self.get_bind}
 
     def get_bind(
@@ -142,7 +170,7 @@ class Manager:
         session: Session,
         mapper: Any,
         clause: Any,
-    ) -> Engine:
+    ) -> Engine | AsyncEngine:
         """Choose the appropriate bind for the given request session.
 
         This method is not used directly, it's called by the session instance
@@ -163,28 +191,29 @@ class Manager:
         return random.choice(engines)
 
     def get_session(
-        self, req: Optional[Request] = None, resp: Optional[Response] = None
-    ) -> Session:
+        self, req: Request | None = None, resp: Response | None = None
+    ) -> Session | AsyncSession:
         """Returns a new session object."""
         if req and resp:
-            return self._Session(
-                info={'req': req, 'resp': resp}, **self._session_kwargs
+            return self._session_maker(  # type: ignore[no-any-return]
+                info={'req': req, 'resp': resp},
             )
 
-        return self._Session()
+        return self._session_maker()  # type: ignore[no-any-return]
 
     def close_session(
         self,
         session: Session,
         succeeded: bool,
-        req: Optional[Request] = None,
-        resp: Optional[Response] = None,
+        req: Request | None = None,
+        resp: Response | None = None,
     ) -> None:
         """Close a session obtained via :func:`get_session`.
 
-        .. note:: There is no need to invoke this method manually if you are
-                  using the :func:`session_scope` context manager, or if you
-                  are using middleware.
+        .. note::
+            There is no need to invoke this method manually if you are using
+            the :func:`session_scope` context manager, or if you are using
+            :attr:`middleware`.
         """
         session_cleanup = self.session_options.session_cleanup
         attempt_commit = session_cleanup == COMMIT_ON_SUCCESS and succeeded
@@ -206,13 +235,47 @@ class Manager:
                 del session.info['resp']
             session.close()
 
+    async def close_session_async(
+        self,
+        session: AsyncSession,
+        succeeded: bool,
+        req: Request | None = None,
+        resp: Response | None = None,
+    ) -> None:
+        """Close an async session obtained via :func:`get_session`.
+
+        .. note::
+            There is no need to invoke this method manually if you are using
+            the :func:`session_scope` context manager, or if you are using
+            :attr:`middleware`.
+        """
+        session_cleanup = self.session_options.session_cleanup
+        attempt_commit = session_cleanup == COMMIT_ON_SUCCESS and succeeded
+
+        try:
+            if attempt_commit or session_cleanup == COMMIT:
+                await session.commit()
+            elif session_cleanup != CLOSE_ONLY:
+                await session.rollback()
+        except Exception:
+            if attempt_commit:
+                await session.rollback()
+            raise
+        finally:
+            if req and resp:
+                # NOTE(vytas): Break circular references between the request
+                #   and session in case the latter was stored in req.context.
+                del session.info['req']
+                del session.info['resp']
+            await session.close()
+
     @property
-    def read_engines(self) -> tuple[Engine, ...]:
+    def read_engines(self) -> tuple[Engine | AsyncEngine, ...]:
         """A tuple of read capable engines."""
         return self._read_engines
 
     @property
-    def write_engines(self) -> tuple[Engine, ...]:
+    def write_engines(self) -> tuple[Engine | AsyncEngine, ...]:
         """A tuple of write capable engines."""
         return self._write_engines
 
@@ -232,12 +295,18 @@ class Manager:
         succeeded = True
 
         try:
-            yield session
+            # TODO: Fix the scope to afford async, and fix typing.
+            yield session  # type: ignore[misc]
         except Exception:
             succeeded = False
             raise
         finally:
-            self.close_session(session, succeeded, req, resp)
+            self.close_session(
+                session,  # type: ignore[arg-type]
+                succeeded,
+                req,
+                resp,
+            )
 
     @property
     def middleware(self) -> Middleware:
