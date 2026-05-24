@@ -1,4 +1,4 @@
-#  Copyright 2020-2025 Vytautas Liuolia
+#  Copyright 2020-2026 Vytautas Liuolia
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -68,6 +68,7 @@ class Manager:
             Defaults to ``None``.
     """
 
+    _middleware: Middleware | None
     _session_maker: sessionmaker[Any] | async_sessionmaker[Any]
 
     def __init__(
@@ -86,6 +87,7 @@ class Manager:
         self._write_engines: tuple[Engine | AsyncEngine, ...] = (engine,)
         self._session_kwargs: dict[str, Any] = {}
 
+        self._middleware = None
         self._uses_request_session = issubclass(session_cls, RequestSession)
 
         if isinstance(engine, AsyncEngine):
@@ -310,10 +312,17 @@ class Manager:
 
     @property
     def middleware(self) -> Middleware:
-        """Create a new :class:`~falcon_sqla.middleware.Middleware` instance
+        """Create a :class:`~falcon_sqla.middleware.Middleware` instance
         connected to this manager.
+
+        .. note::
+            The middleware component is instantiated only once.
+            Subsequent access to this property will return the same
+            (cached) instance.
         """
-        return Middleware(self)
+        if self._middleware is None:
+            self._middleware = Middleware(self)
+        return self._middleware
 
 
 class SessionOptions:
