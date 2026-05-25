@@ -65,7 +65,7 @@ parallel to the API:
 >>> import requests
 >>> requests.put(
 ...     'http://localhost:8000/satellites/dysnomia',
-...     json={'mass': 8.2e19, 'radius': 350, 'distance': 37273, 'primary': 'eris'})
+...     json={'mass': 8.2e19, 'radius': 350, 'distance': 37273, 'primary': 'Eris'})
 <Response [201]>
 
 
@@ -88,6 +88,25 @@ Running it requires the asynchronous SQLite driver and an ASGI server such as
 
 The script writes to ``examples/solar_async.sqlite`` so the two examples can
 coexist without stepping on each other's data.
+
+In addition to directly manipulating the database and sending HTTP requests,
+another easy way to interact with the application is Falcon's
+`TestClient <https://falcon.readthedocs.io/api/testing.html#falcon.testing.TestClient>`__;
+it supports both WSGI and ASGI apps.
+
+Let's import this async example interactively::
+
+    $ python -i examples/solar_async.py --skip-server
+
+We can now simulate requests against the ``app``:
+
+>>> client = TestClient(app)
+>>> client.get('/stars/sun')
+Result<200 OK application/json b'{"name": "Sun", "mas...0, "distance": null}'>
+>>> client.put(
+...     '/planets/eris',
+...     json={'mass': 1.6466e22, 'radius': 1163.0, 'distance': 1.01237e10})
+Result<201 Created application/json b'{"name": "Eris", "ma...0, "satellites": []}'>
 
 A handful of notable differences from the synchronous version:
 

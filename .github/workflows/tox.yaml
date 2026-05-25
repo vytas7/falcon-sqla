@@ -24,6 +24,7 @@ jobs:
           - "ruff"
           - "mypy"
           - "docs"
+          - "min_versions"
           - "twine_check"
         include:
           - python-version: "3.9"
